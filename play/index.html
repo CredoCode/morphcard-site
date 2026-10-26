@@ -727,6 +727,31 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
 
 .botoffer{margin:10px 0;padding:12px 14px;border:1px solid #c8a96a;border-radius:6px;background:rgba(200,169,106,.08);display:flex;flex-direction:column;gap:10px;align-items:flex-start}
 .botoffer p{margin:0;font-size:14px;line-height:1.45}
+
+/* Online v2: ranked play first */
+.on-hero{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(220px,1fr);gap:22px;align-items:center;margin:6px 0 18px;padding:22px 24px;border:1px solid #c8a96a;border-radius:4px;background:linear-gradient(180deg,rgba(200,169,106,.13),rgba(13,13,18,.92) 75%)}
+.on-hero .btn.btn-hero{display:block;width:100%;padding:22px 26px;font-size:19px;letter-spacing:.22em}
+.on-hero .hero-play>p,.on-hero .hero-play p.muted{margin:10px 0 0}
+.on-hero .hero-rate{border-left:1px solid #3a3426;padding-left:22px}
+.on-hero .hero-rate .tag{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#c8a96a;font-weight:700}
+.on-hero .hero-rate .rate{margin:6px 0 6px}
+.on-hero .searching{margin:0 0 10px}
+.on-matches{margin-bottom:26px}
+.on-matches .grphd{margin-bottom:10px}
+.mhead{list-style:none;margin:8px 0 0;font:700 11px/1 'Hanken Grotesk',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#c8a96a}
+.mhead:first-child{margin-top:0}
+.mexp{color:#a99a80;font-size:12px}
+.grp .fcode{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 12px}
+@media (max-width:700px){.on-hero{grid-template-columns:1fr}.on-hero .hero-rate{border-left:0;padding-left:0;border-top:1px solid #3a3426;padding-top:14px}}
+
+.pinfo{margin:0 0 16px;padding:14px 16px;border:1px solid #3a3426;border-radius:3px;background:rgba(13,13,18,.88);display:flex;flex-direction:column;gap:10px}
+.pinfo-top{display:flex;align-items:baseline;gap:12px}
+.pinfo .pname{font:600 22px/1.1 'Cormorant Garamond',serif;letter-spacing:.04em;color:#f4ecdc}
+.pinfo .frate{margin-left:0}
+.pinfo .fcode{margin:0;flex-wrap:wrap}
+.pinfo .row{margin:0;flex-wrap:wrap}
+.tally{margin:2px 0 6px;font-size:14px;color:#cfc7b4}
+.tally b{font:700 16px/1 'Hanken Grotesk',sans-serif;font-variant-numeric:lining-nums;color:#e8cf93;letter-spacing:.04em}
 </style>
 <style>html,body{margin:0;min-height:100%;background:#0b0a0e}#app{min-height:100vh}</style>
 </head>
@@ -929,7 +954,7 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
 <main class="wrap page-in">
   <div class="phead">
     <button type="button" class="back" onClick="{{goHome}}">Main menu</button>
-    <div class="ptitle"><span class="tag">Play your friends</span><h1>Online</h1></div>
+    <div class="ptitle"><span class="tag">Ranked and friends</span><h1>Online</h1></div>
     <div class="pright">
       <span class="pill"><span class="coin"></span>{{coins}} Coins</span>
       <button type="button" class="btn btn-g" aria-pressed="{{muted}}" onClick="{{toggleMute}}">{{soundLabel}}</button>
@@ -958,21 +983,10 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
   </template>
 
   <template data-sc-if value="{{netReady}}" hint-placeholder-val="{{ false }}">
-  <div class="on-grid">
-    <section class="on-card">
-      <h2 class="sech">{{netMyName}}</h2>
-      <p class="muted">Your friend code. Share it so friends can add you.</p>
-      <div class="fcode"><b>{{netMyCode}}</b><button type="button" class="btn btn-s" onClick="{{netCopyCode}}">{{netCopyLabel}}</button></div>
-      <div class="row"><button type="button" class="btn btn-g" disabled="{{netBusy}}" onClick="{{netReload}}">Refresh</button><button type="button" class="btn btn-g" onClick="{{netEditProfile}}">Edit profile</button><button type="button" class="btn btn-g" onClick="{{netSignOut}}">Sign out</button></div>
-      <div class="row danger-row"><button type="button" class="btn btn-g danger" aria-pressed="{{netDelArm}}" disabled="{{netBusy}}" onClick="{{netDelete}}">{{netDelLabel}}</button></div>
-      <template data-sc-if value="{{netDelArm}}" hint-placeholder-val="{{ false }}"><p class="err small">This permanently deletes your account, friends and online match history. Your offline progress on this device stays.</p></template>
-    </section>
-    <section class="on-card">
-      <h2 class="sech">Ranked</h2>
-      <div class="rate"><b>{{rkRating}}</b><span>{{rkTier}}</span></div>
-      <p class="muted">{{rkRecord}}</p>
+  <section class="on-hero" aria-label="Ranked play">
+    <div class="hero-play">
       <template data-sc-if value="{{rkIdle}}" hint-placeholder-val="{{ true }}">
-        <button type="button" class="btn btn-p" disabled="{{rkNoFind}}" onClick="{{rkFind}}">Find a ranked match</button>
+        <button type="button" class="btn btn-p btn-hero" disabled="{{rkNoFind}}" onClick="{{rkFind}}">Find a ranked match</button>
         <p class="muted small">You'll play a random opponent near your rating. Win: rating up and 50 Coins. Loss: 15 Coins. If nobody turns up in 30 seconds, you can play the House bot instead.</p>
       </template>
       <template data-sc-if value="{{rkSearching}}" hint-placeholder-val="{{ false }}">
@@ -985,26 +999,38 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
         </template>
         <button type="button" class="btn btn-g" onClick="{{rkCancel}}">Cancel</button>
       </template>
-    </section>
-    <section class="on-card">
-      <h2 class="sech">Matches</h2>
-      <template data-sc-if value="{{netNoMatches}}" hint-placeholder-val="{{ false }}"><p class="muted">No matches yet. Challenge a friend below.</p></template>
+    </div>
+    <div class="hero-rate">
+      <span class="tag">Your rating</span>
+      <div class="rate"><b>{{rkRating}}</b><span>{{rkTier}}</span></div>
+      <p class="muted">{{rkRecord}}</p>
+    </div>
+  </section>
+  <section class="on-card on-matches">
+    <div class="grphd"><h2 class="sech">Matches</h2><span class="muted">Untouched matches and challenges are removed after {{matchTtl}} hours.</span></div>
+      <template data-sc-if value="{{netNoMatches}}" hint-placeholder-val="{{ false }}"><p class="muted">No matches yet. Find a ranked match above, or challenge a friend below.</p></template>
       <ul class="mlist">
         <template data-sc-for list="{{netMatches}}" as="m" hint-placeholder-count="2">
-          <li class="mrow {{m.cls}}"><span class="mtxt">{{m.text}}</span><span class="mbtns">
+          <template data-sc-if value="{{m.hasHead}}" hint-placeholder-val="{{ false }}"><li class="mhead">{{m.head}}</li></template>
+          <li class="mrow {{m.cls}}"><span class="mtxt">{{m.text}}<span class="mexp">{{m.exp}}</span></span><span class="mbtns">
             <template data-sc-if value="{{m.canPlay}}" hint-placeholder-val="{{ false }}"><button type="button" class="btn btn-p" onClick="{{m.play}}">{{m.playLabel}}</button></template>
             <template data-sc-if value="{{m.canAnswer}}" hint-placeholder-val="{{ false }}"><button type="button" class="btn btn-p" disabled="{{netBusy}}" onClick="{{m.accept}}">Accept</button><button type="button" class="btn btn-g" disabled="{{netBusy}}" onClick="{{m.decline}}">Decline</button></template>
             <template data-sc-if value="{{m.canCancel}}" hint-placeholder-val="{{ false }}"><button type="button" class="btn btn-g" disabled="{{netBusy}}" onClick="{{m.cancel}}">Cancel</button></template>
           </span></li>
         </template>
       </ul>
-    </section>
-  </div>
+  </section>
   <section class="grp">
     <div class="grphd"><h2 class="sech">Friends</h2><span class="muted">{{netFriendCount}}</span></div>
     <div class="addf">
       <input type="text" placeholder="Add a friend by code, e.g. NAME#1234" aria-label="Friend code" value="{{netFriendCode}}" onInput="{{netFriendCodeIn}}" onKeyDown="{{netFriendCodeKey}}">
       <button type="button" class="btn btn-p" disabled="{{netBusy}}" onClick="{{netAddFriend}}">Add friend</button>
+    </div>
+    <div class="pinfo" aria-label="Your profile">
+      <div class="pinfo-top"><b class="pname">{{netMyName}}</b><span class="frate">{{rkRating}} · {{rkTier}}</span></div>
+      <div class="fcode"><span class="muted">Your friend code</span><b>{{netMyCode}}</b><button type="button" class="btn btn-s" onClick="{{netCopyCode}}">{{netCopyLabel}}</button></div>
+      <div class="row"><button type="button" class="btn btn-g" disabled="{{netBusy}}" onClick="{{netReload}}">Refresh</button><button type="button" class="btn btn-g" onClick="{{netEditProfile}}">Edit profile</button><button type="button" class="btn btn-g" onClick="{{netSignOut}}">Sign out</button><button type="button" class="btn btn-g danger" aria-pressed="{{netDelArm}}" disabled="{{netBusy}}" onClick="{{netDelete}}">{{netDelLabel}}</button></div>
+      <template data-sc-if value="{{netDelArm}}" hint-placeholder-val="{{ false }}"><p class="err small">This permanently deletes your account, friends and online match history. Your offline progress on this device stays.</p></template>
     </div>
     <template data-sc-if value="{{netNoFriends}}" hint-placeholder-val="{{ false }}"><p class="muted">No friends yet. Add one with their friend code, or send them yours.</p></template>
     <div class="flist">
@@ -1012,7 +1038,7 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
         <article class="fr">
           <div class="frh"><span class="odot {{f.dot}}" title="{{f.status}}"></span><b>{{f.name}}</b><span class="muted">{{f.code}}</span><span class="frate">{{f.rating}}</span></div>
           <p class="frs">{{f.line}}</p>
-          <template data-sc-if value="{{f.hasLast}}" hint-placeholder-val="{{ false }}"><div class="last"><span class="muted">Last games:</span><template data-sc-for list="{{f.last}}" as="x" hint-placeholder-count="3"><i class="{{x.cls}}">{{x.r}}</i></template></div></template>
+          <template data-sc-if value="{{f.isFriend}}" hint-placeholder-val="{{ true }}"><p class="tally" title="Your wins first, then {{f.name}}'s">The tally: <b>{{f.tally}}</b></p></template>
           <div class="row">
             <template data-sc-if value="{{f.isFriend}}" hint-placeholder-val="{{ true }}"><button type="button" class="btn btn-s" disabled="{{f.noChallenge}}" onClick="{{f.challenge}}">Challenge</button><button type="button" class="btn btn-g" disabled="{{netBusy}}" onClick="{{f.remove}}">Remove</button></template>
             <template data-sc-if value="{{f.isIncoming}}" hint-placeholder-val="{{ false }}"><button type="button" class="btn btn-p" disabled="{{netBusy}}" onClick="{{f.accept}}">Accept</button><button type="button" class="btn btn-g" disabled="{{netBusy}}" onClick="{{f.decline}}">Decline</button></template>
@@ -1582,6 +1608,13 @@ class Component extends DCLogic {
   netOnChange(p) {
     const g = this.state.game, row = p && (p.new || p.old);
     if (this.state.net.queue && p && p.eventType === 'INSERT' && p.new && p.new.status === 'active') { this.netStopQueue(); this.netLoadMatch(p.new.id).catch(() => {}); return; }
+    if (g && g.mode === 'online' && row && row.id === this._matchId && p.eventType === 'DELETE') {
+      this._matchId = null;
+      this.setState({ game: null, screen: 'online' });
+      this.netSet({ msg: 'That match was removed after ' + Component.MATCH_TTL_H + ' hours without a move.' });
+      this.netRefresh().catch(() => {});
+      return;
+    }
     if (g && g.mode === 'online' && row && row.id === this._matchId) { if (!this._acting) this.netLoadMatch(this._matchId).catch(() => {}); return; }
     clearTimeout(this._netT);
     this._netT = setTimeout(() => { if (this.state.net.phase === 'ready') this.netRefresh().catch(() => {}); }, 250);
@@ -1735,7 +1768,8 @@ class Component extends DCLogic {
      Art: the OP7 team's finished capsules, scaled uniformly (no crops, no tint shifts). linkLive stays false until the
      OP7 / Steam sessions confirm the store page is public; never switch it on from the date alone. */
   /* ranked fallback; the server holds the real values (BOT in game.mjs) and checks the wait */
-  static BOT_OFFER = { wait: 30000, rating: 2, coins: 25, dailyWins: 10 };
+  static BOT_OFFER = { wait: 30000, rating: 2, coins: 25, dailyWins: 100 };
+  static MATCH_TTL_H = 48; /* the server deletes challenges and matches untouched for this long */
   static OP7 = {
     title: 'Observation Post 7', tagline: 'The Directorate is watching. So are you.', rating: 'Mature 17+',
     cta: 'Wishlist on Steam (coming Nov 17)', url: 'https://store.steampowered.com/app/5464740/', linkLive: false,
@@ -3153,7 +3187,7 @@ class Component extends DCLogic {
     vals.homeSignedIn = N.phase === 'ready' || N.phase === 'needName';
     const acc = (nd && nd.account) || null, myR = acc ? acc.rating : 1500;
     vals.rkRating = myR; vals.rkTier = Component.tierOf(myR);
-    vals.rkRecord = acc && acc.ratedGames ? acc.ratedWins + ' wins, ' + acc.ratedLosses + ' losses in ' + acc.ratedGames + ' ranked ' + (acc.ratedGames === 1 ? 'match' : 'matches') : 'No ranked matches yet.';
+    vals.rkRecord = acc && acc.ratedGames ? acc.ratedWins + (acc.ratedWins === 1 ? ' win, ' : ' wins, ') + acc.ratedLosses + (acc.ratedLosses === 1 ? ' loss in ' : ' losses in ') + acc.ratedGames + ' ranked ' + (acc.ratedGames === 1 ? 'match' : 'matches') : 'No ranked matches yet.';
     vals.rkIdle = !N.queue; vals.rkSearching = !!N.queue; vals.rkNoFind = nb || deckBad;
     vals.rkFind = () => this.netFindRanked(); vals.rkCancel = () => this.netCancelQueue();
     vals.rkBotOffer = !!(N.queue && N.botOffer); vals.rkBot = () => this.netPlayBot();
@@ -3198,10 +3232,11 @@ class Component extends DCLogic {
     vals.netFriends = fr.map((f) => {
       const on = (N.online || []).indexOf(f.id) >= 0, h = f.h2h;
       const line = f.status === 'incoming' ? 'Wants to be your friend' : f.status === 'outgoing' ? 'Friend request sent' :
-        (h && h.games ? 'You ' + h.w + ' – ' + h.l + ' ' + f.name + ' · your win rate ' + Math.round(h.w / h.games * 100) + '% over ' + h.games + (h.games === 1 ? ' game' : ' games') : 'No games together yet');
+        (h && h.games ? 'Your win rate ' + Math.round(h.w / h.games * 100) + '% over ' + h.games + (h.games === 1 ? ' game' : ' games') : 'No games together yet');
       return {
         name: f.name, code: f.code, rating: f.ratedGames ? f.rating + ' · ' + Component.tierOf(f.rating) : 'Unranked', dot: f.status === 'accepted' && on ? 'on' : 'off', status: f.status === 'accepted' ? (on ? 'Online' : 'Offline') : '', line: line,
-        hasLast: !!(h && h.last), last: h && h.last ? h.last.split('').map((r) => ({ r: r, cls: r === 'W' ? 'w' : 'l' })) : [],
+        /* your wins first, then theirs (draws aren't counted) */
+        tally: (h ? h.w : 0) + '-' + (h ? h.l : 0),
         isFriend: f.status === 'accepted', isIncoming: f.status === 'incoming', isOutgoing: f.status === 'outgoing',
         noChallenge: nb || deckBad || openWith(f.id),
         challenge: () => this.netRun(async () => { const st = await this.netCall('challenge', { friend: f.id, deck: this.state.deck }); this.netSet({ data: st, msg: 'Challenge sent to ' + f.name + '.' }); }),
@@ -3212,9 +3247,17 @@ class Component extends DCLogic {
     });
     const ms = nd.matches || [];
     vals.netNoMatches = ms.length === 0;
-    vals.netMatches = ms.map((m) => {
+    vals.matchTtl = Component.MATCH_TTL_H;
+    /* your turn first, then the other player's turn, then challenges waiting to be accepted (yours to answer before theirs) */
+    const mrank = (m) => m.status === 'active' ? (m.myTurn ? 0 : 1) : (m.mine ? 3 : 2);
+    const mheads = ['Your turn', 'Their turn', 'Waiting for you to accept', 'Waiting for them to accept'];
+    const sorted = ms.map((m, k) => ({ m: m, k: k })).sort((a, b) => mrank(a.m) - mrank(b.m) || a.k - b.k).map((x) => x.m);
+    vals.netMatches = sorted.map((m, k) => {
       const o = m.opponent.name, active = m.status === 'active', incoming = m.status === 'challenge' && !m.mine;
+      const left = m.updatedAt ? Component.MATCH_TTL_H - (Date.now() - Date.parse(m.updatedAt)) / 3600000 : null;
       return {
+        hasHead: k === 0 || mrank(sorted[k - 1]) !== mrank(m), head: mheads[mrank(m)],
+        exp: left == null ? '' : ' · ' + (left <= 1 ? 'expires within the hour' : 'expires in ' + Math.ceil(left) + ' h'),
         cls: active && m.myTurn ? 'myturn' : '',
         text: active ? 'vs ' + o + ' · ' + (m.myTurn ? 'your turn' : o + "'s turn") + ' · you are ' + (m.color === 'w' ? 'White' : 'Black') : incoming ? o + ' challenged you' : 'Waiting for ' + o + ' to accept',
         canPlay: active, playLabel: m.myTurn ? 'Play' : 'Watch',
