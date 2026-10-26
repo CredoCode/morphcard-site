@@ -1,0 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Hanken+Grotesk:wght@400;600;700&display=swap');
+:root{--bg:#0b0a0e;--panel:#141218;--line:#2b2820;--text:#f4ecdc;--muted:#b3a88f;--brass:#c8a96a;--gold:#e8cf93}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 'Hanken Grotesk',system-ui,sans-serif}
+a{color:var(--gold)}
+a:hover{color:#fff}
+.doc{max-width:760px;margin:0 auto;padding:40px 20px 72px}
+.kicker{margin:0 0 6px;font-size:12px;letter-spacing:.24em;text-transform:uppercase}
+.kicker a{color:var(--brass);text-decoration:none}
+h1{font:700 clamp(36px,6vw,54px)/1.05 'Cormorant Garamond',serif;letter-spacing:.04em;margin:0 0 6px}
+h2{font:700 24px/1.2 'Cormorant Garamond',serif;letter-spacing:.03em;margin:34px 0 8px;color:var(--gold)}
+.meta{color:var(--muted);margin:0 0 24px}
+ul{padding-left:22px}
+li{margin:4px 0}
+.summary{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--brass);padding:4px 22px 10px;margin:24px 0}
+.summary h2{margin-top:16px}
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px}
+.hero h1{font-size:clamp(46px,10vw,96px);letter-spacing:.12em;text-transform:uppercase}
+.hero p{color:var(--muted);max-width:520px}
+.links{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;margin-top:18px;font-size:14px;letter-spacing:.14em;text-transform:uppercase}
