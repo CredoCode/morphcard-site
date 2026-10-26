@@ -700,17 +700,23 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
   .app:has(.game) .game .gside .tpanel .row{grid-column:2;grid-row:1 / span 2;align-self:center;gap:8px}
   .app:has(.game) .game .gside .tpanel .btn{padding:9px 14px;font-size:11px}
   .app:has(.game) .game .gbottom .hand-head{line-height:1.1}
-  .app:has(.game) .game .gside.tutdock{height:200px}
   .app:has(.game) .game .gside .panel{min-height:0;overflow:auto;padding:10px 16px;gap:6px;border-radius:12px}
   .app:has(.game) .game .gside .tpanel{flex:0 1 640px}
-  .app:has(.game) .game .gside .coach{flex:1 1 560px}
-  .app:has(.game) .game .gside .coach p{margin:0 0 4px}
+  /* tutorial: coach and board meet in the middle (coach right-aligned in the left half, board left-aligned in the right half) */
+  .app:has(.game) .game.tut{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"coach board" "hand hand" "side side"}
+  .app:has(.game) .game .coachside{min-height:0;overflow:auto;display:flex;flex-direction:column;justify-self:end;width:min(100%,400px)}
+  .app:has(.game) .game .coachside>.panel{margin:auto 0;padding:14px 16px;gap:8px}
+  .app:has(.game) .game .coachside .coach h3{font-size:20px}
+  .app:has(.game) .game .coachside .coach p{font-size:13.5px;line-height:1.4;margin:0 0 6px}
+  .app:has(.game) .game.tut .boardbox,.app:has(.game) .game.tut .opp{justify-content:flex-start}
   .app:has(.game) .game .gside .mpanel{flex:1 1 320px;overflow:hidden}
   .app:has(.game) .game .gside .mpanel h3{font-size:14px;letter-spacing:.14em;text-transform:uppercase;margin:0}
   .app:has(.game) .game .gside .mpanel .log{max-height:none;flex:1 1 auto;min-height:0;font-size:13px}
 }
+.game .coachside{grid-area:coach}
 @media (max-width:760px){
   .game{grid-template-areas:"board" "hand" "side"}
+  .game.tut{grid-template-areas:"coach" "board" "hand" "side"}
   .game .gside .tpanel .hint-line{-webkit-line-clamp:3}
 }
 
@@ -1025,7 +1031,26 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
 </template>
 
 <template data-sc-if value="{{isGame}}" hint-placeholder-val="{{ false }}">
-<main class="game">
+<main class="game {{gameCls}}">
+  <template data-sc-if value="{{isTut}}" hint-placeholder-val="{{ false }}">
+  <aside class="coachside">
+    <div class="panel coach" role="region" aria-label="Tutorial coach">
+      <div class="coach-top"><span class="tag">Lesson {{tutNo}} of {{tutCount}}</span><span class="tdots"><template data-sc-for list="{{tutDots}}" as="d" hint-placeholder-count="7"><i class="{{d.cls}}"></i></template></span></div>
+      <h3>{{tutTitle}}</h3>
+      <p>{{tutText}}</p>
+      <template data-sc-if value="{{tutWorking}}" hint-placeholder-val="{{ true }}"><p class="coach-step" role="status"><b>Your turn {{tutTurn}} · Step {{tutStepNo}} of {{tutSteps}}</b>{{tutHint}}</p></template>
+      <template data-sc-if value="{{tutDoneNow}}" hint-placeholder-val="{{ false }}">
+        <p class="coach-done" role="status"><b>Lesson complete.</b> {{tutDoneText}}</p>
+        <div class="row"><button type="button" class="btn btn-p" onClick="{{tutNext}}">Next lesson</button></div>
+      </template>
+      <div class="row coach-ctl">
+        <button type="button" class="btn btn-g" onClick="{{tutRestart}}">Restart lesson</button>
+        <button type="button" class="btn btn-g" onClick="{{tutSkip}}">{{tutSkipLabel}}</button>
+        <button type="button" class="btn btn-g" onClick="{{tutExit}}">Exit</button>
+      </div>
+    </div>
+  </aside>
+  </template>
   <div class="gcol">
     <div class="opp">
       <span class="dot {{oppDot}}"></span><span class="who">{{oppName}}</span>
@@ -1077,24 +1102,7 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
     </div>
   </section>
 
-  <aside class="gside {{sideCls}}">
-    <template data-sc-if value="{{isTut}}" hint-placeholder-val="{{ false }}">
-    <div class="panel coach" role="region" aria-label="Tutorial coach">
-      <div class="coach-top"><span class="tag">Lesson {{tutNo}} of {{tutCount}}</span><span class="tdots"><template data-sc-for list="{{tutDots}}" as="d" hint-placeholder-count="7"><i class="{{d.cls}}"></i></template></span></div>
-      <h3>{{tutTitle}}</h3>
-      <p>{{tutText}}</p>
-      <template data-sc-if value="{{tutWorking}}" hint-placeholder-val="{{ true }}"><p class="coach-step" role="status"><b>Your turn {{tutTurn}} · Step {{tutStepNo}} of {{tutSteps}}</b>{{tutHint}}</p></template>
-      <template data-sc-if value="{{tutDoneNow}}" hint-placeholder-val="{{ false }}">
-        <p class="coach-done" role="status"><b>Lesson complete.</b> {{tutDoneText}}</p>
-        <div class="row"><button type="button" class="btn btn-p" onClick="{{tutNext}}">Next lesson</button></div>
-      </template>
-      <div class="row coach-ctl">
-        <button type="button" class="btn btn-g" onClick="{{tutRestart}}">Restart lesson</button>
-        <button type="button" class="btn btn-g" onClick="{{tutSkip}}">{{tutSkipLabel}}</button>
-        <button type="button" class="btn btn-g" onClick="{{tutExit}}">Exit</button>
-      </div>
-    </div>
-    </template>
+  <aside class="gside">
     <div class="panel tpanel">
       <template data-sc-if value="{{notTut}}" hint-placeholder-val="{{ true }}"><div class="turn"><span class="dot {{turnDot}}"></span>{{turnText}}<span class="muted caps">Captures: {{capText}}</span></div></template>
       <p class="hint-line" role="status">{{hintLine}}</p>
@@ -3287,7 +3295,7 @@ class Component extends DCLogic {
     vals.dzOver = (e) => this.dzOver(e); vals.dzDrop = (e) => this.dzDrop(e); vals.discardSel = () => this.discardSel();
     vals.capText = online ? 'You ' + g.caps[viewer] + '  |  ' + oppNm + ' ' + g.caps[opp] : (g.mode === 'bot' ? 'You ' : 'White ') + g.caps[g.mode === 'bot' ? g.human : 'w'] + '  |  ' + (g.mode === 'bot' ? 'Bot ' : 'Black ') + g.caps[g.mode === 'bot' ? opp : 'b'];
 
-    vals.turnDot = g.turn; vals.chaining = busy && humanTurn; vals.sideCls = g.tut ? 'tutdock' : '';
+    vals.turnDot = g.turn; vals.chaining = busy && humanTurn; vals.gameCls = g.tut ? 'tut' : '';
     vals.showBan = !g.over && !busy && (!g.tut || ((g.turnNo || 0) > 0 && !g.tut.done));
     vals.banCls = 'turnban ' + ((g.turnNo || 0) % 2 ? 'banA' : 'banB');
     vals.banText = g.tut ? 'Dummy passes · your turn' : online ? (g.turn === g.human ? 'Your turn' : oppNm + '\'s turn') : g.mode === 'bot' ? (g.turn === g.human ? 'Your turn' : 'Bot\'s turn') : nm(g.turn) + '\'s turn';
@@ -3296,7 +3304,8 @@ class Component extends DCLogic {
     let hl;
     if (g.note) hl = g.note;
     else if (g.over) hl = 'Game over.';
-    else if (g.tut) hl = g.tut.done ? 'Lesson complete. Press Next lesson.' : tutStep.hint;
+    /* the coach beside the board already shows the step, so this line only adds what the coach does not */
+    else if (g.tut) hl = g.tut.done ? 'Lesson complete. Press Next lesson in the coach.' : g.chain ? 'Checker: pick your next capture on a red diagonal, or finish your turn.' : 'Follow the step in the coach beside the board.';
     else if (!humanTurn) hl = online ? 'Waiting for ' + oppNm + ' to move. Their move appears here as soon as they make it.' : 'The bot is choosing a move or a card.';
     else if (g.chain) hl = 'Checker: pick your next capture on a red diagonal, or finish your turn.';
     else if (g.haste) hl = 'Haste: move this piece again (no captures, not onto the far row), or Finish turn to keep Haste for later.';
