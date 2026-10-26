@@ -1309,7 +1309,7 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
   </div>
   <div class="pbar">
     <div class="pmeter"><b><span class="coin"></span> {{coins}}</b><span>Coins to spend</span></div>
-    <p class="muted">Earn Coins by playing: a win against the bot pays 50 (plus a streak bonus), a loss pays 15, a pass &amp; play match pays 10, and online matches pay 50 for a win. {{shopNote}}</p>
+    <p class="muted">Earn Coins by playing: online matches pay 50 for a win, and a win against the bot in Pass &amp; Play pays 5. {{shopNote}}</p>
     <template data-sc-if value="{{shopGuest}}" hint-placeholder-val="{{ false }}"><p class="lockmsg"><button type="button" class="btn btn-s" onClick="{{homeSignIn}}">Sign in</button> to buy card packs. New accounts get 1000 Coins.</p></template>
   </div>
   <template data-sc-if value="{{showOp7}}" hint-placeholder-val="{{ false }}">
@@ -1378,8 +1378,8 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
       <h2 id="pick-title">Pass &amp; Play</h2>
       <p class="muted">Who are you playing?</p>
       <div class="menu pick">
-        <button type="button" class="mi primary" onClick="{{pickFriend}}"><span class="mi-t">A friend on this device</span><span class="mi-s">Take turns on one screen. A match pays 10 Coins.</span></button>
-        <button type="button" class="mi" onClick="{{pickBot}}"><span class="mi-t">The bot</span><span class="mi-s">Duel the house. A win pays 50 Coins, plus a streak bonus.</span></button>
+        <button type="button" class="mi primary" onClick="{{pickFriend}}"><span class="mi-t">A friend on this device</span><span class="mi-s">Take turns on one screen. Just for fun: no Coins or rating.</span></button>
+        <button type="button" class="mi" onClick="{{pickBot}}"><span class="mi-t">The bot</span><span class="mi-s">Practice against the house. A win pays 5 Coins. No rating.</span></button>
       </div>
       <div class="row"><button type="button" class="btn btn-g" onClick="{{closePick}}">Cancel</button></div>
     </div>
@@ -2500,6 +2500,8 @@ class Component extends DCLogic {
   }
   /* ---------- tutorial: 7 staged lessons on their own boards; the coach only accepts each step's action ---------- */
   static TUT_REWARD = 100;
+  /* a win against the bot in Pass & Play; losses pay nothing and it never changes rating */
+  static BOT_WIN_COINS = 5;
   static TUTORIAL = [
     {
       title: 'Heads and bodies', text: 'Every piece starts as a Pawn head: an orb that cannot move. A movement card gives it a body. Each turn you do exactly one thing: move a piece, play one card, or discard one card.',
@@ -2950,16 +2952,14 @@ class Component extends DCLogic {
       if (g.mode === 'bot') {
         if (g.over.winner === g.human) {
           stats.wins++; stats.streak++; stats.best = Math.max(stats.best, stats.streak);
-          const bonus = Math.min(40, 10 * (stats.streak - 1));
-          amt = 50 + bonus; why = 'Victory: 50' + (bonus ? ' + win-streak bonus ' + bonus : '');
+          amt = Component.BOT_WIN_COINS; why = 'A win against the bot pays ' + Component.BOT_WIN_COINS + ' Coins.';
           this.sfx('win');
         } else {
           stats.losses++; stats.streak = 0;
-          amt = g.over.reason === 'resign' ? 0 : 15;
-          why = amt ? 'Reward for playing the match out.' : 'Resigned matches pay nothing.';
+          amt = 0; why = 'Losses against the bot pay nothing.';
           this.sfx('lose');
         }
-      } else { amt = 10; why = 'Pass & play match reward.'; this.sfx('win'); }
+      } else { amt = 0; why = 'Pass & play matches against a friend are just for fun: no Coins or rating.'; this.sfx('win'); }
       if (acct) {
         serverReward = g.mode === 'bot' ? ['bot', g.over.winner === g.human ? 'win' : g.over.reason === 'resign' ? 'resign' : 'loss'] : ['local', 'done'];
         g.over.reward = 0; g.over.why = 'Saving your reward…'; stats = this.state.stats;
