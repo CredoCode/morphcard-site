@@ -668,9 +668,19 @@ sc-if,sc-for{display:contents}
 .start-foot{margin:6px 0 0;color:#8a7f66;font-size:12px}
 .agefld label{font-size:14px;color:#cfc7b4}
 .agefld label b{color:#e8cf93;font-variant-numeric:lining-nums}
-.agesl{width:100%;max-width:420px;margin-top:8px;accent-color:#c8a96a;height:28px;cursor:pointer}
-.agescale{display:flex;justify-content:space-between;max-width:420px;font-size:11px;color:#8a7f66;font-style:normal}
-.agescale i{font-style:normal}
+/* Age slider: our own track and an 18 px thumb, the same in every browser, so each scale label can sit exactly under
+   the thumb position for its value. The thumb centre travels from 9 px to (width - 9 px); --p = (value - 6) / (60 - 6). */
+.agesl{-webkit-appearance:none;appearance:none;display:block;width:100%;max-width:420px;height:28px;margin:8px 0 0;padding:0;background:transparent;cursor:pointer}
+.agesl::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:#3a3426;box-shadow:inset 0 0 0 1px #5a5038}
+.agesl::-webkit-slider-thumb{-webkit-appearance:none;box-sizing:border-box;width:18px;height:18px;margin-top:-6px;border-radius:50%;background:#c8a96a;border:2px solid #0b0a08;box-shadow:0 0 0 1px #c8a96a}
+.agesl::-moz-range-track{height:6px;border-radius:3px;background:#3a3426;box-shadow:inset 0 0 0 1px #5a5038}
+.agesl::-moz-range-thumb{box-sizing:border-box;width:18px;height:18px;border-radius:50%;background:#c8a96a;border:2px solid #0b0a08;box-shadow:0 0 0 1px #c8a96a}
+.agesl:focus-visible{outline:2px solid #e8cf93;outline-offset:4px}
+/* the profile cards style every input as a text box; the slider must have no border or padding, or the thumb no longer lines up with the scale */
+.net-card .fld input.agesl,.fld input.agesl{background:transparent;border:0;border-radius:0;padding:0;box-shadow:none}
+.agescale{position:relative;display:block;max-width:420px;height:22px;font-size:11px;color:#8a7f66;font-style:normal}
+.agescale i{position:absolute;top:6px;left:calc(9px + (100% - 18px) * var(--p));transform:translateX(-50%);font-style:normal;font-variant-numeric:lining-nums;line-height:1}
+.agescale i::before{content:"";position:absolute;left:50%;top:-6px;width:1px;height:4px;background:#8a7f66}
 
 .guest-q{margin:0;font-weight:600;color:#f4ecdc}
 
@@ -752,6 +762,111 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
 .pinfo .row{margin:0;flex-wrap:wrap}
 .tally{margin:2px 0 6px;font-size:14px;color:#cfc7b4}
 .tally b{font:700 16px/1 'Hanken Grotesk',sans-serif;font-variant-numeric:lining-nums;color:#e8cf93;letter-spacing:.04em}
+
+/* ===== Phones (max 760 px wide), 2026-10-27 ===== */
+@media (max-width:760px){
+  /* main menu: every button fits on one screen, even with Play Online and a phone browser's toolbars */
+  .home-in{padding:18px 16px 14px;gap:18px}
+  .home-l{gap:6px}
+  .logo{gap:10px}
+  .logo-mark{width:40px;height:40px}
+  .logo h1{font-size:36px}
+  .home-l>.tag{font-size:11px}
+  .menu{gap:6px;margin-top:8px;max-width:none}
+  .mi{min-height:0;padding:8px 14px 8px 40px}
+  .mi-t{font-size:21px}
+  .mi-s{font-size:11.5px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* a match is exactly one screen: slim top bar, the board takes what's left, one swipeable row of cards, a compact turn panel */
+  .app:has(.game){height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+  .app:has(.game) .top{flex:none;flex-wrap:nowrap;gap:8px;padding:6px 10px}
+  .app:has(.game) .top .nav{display:none}
+  .app:has(.game) .top .brand{font-size:12px;letter-spacing:.22em}
+  .app:has(.game) .top .right{padding-left:0;border-left:0;gap:6px}
+  .app:has(.game) .top .btn,.app:has(.game) .top .pill{min-height:28px;padding:3px 8px;font-size:10.5px}
+  .app:has(.game) .game{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto auto;grid-template-areas:"board" "hand" "side";gap:6px;padding:6px 8px 8px;max-width:none;margin:0;align-items:stretch;justify-content:stretch}
+  .app:has(.game) .game.tut{grid-template-rows:auto minmax(0,1fr) auto auto;grid-template-areas:"coach" "board" "hand" "side"}
+  .app:has(.game) .game .gcol{grid-area:board;width:auto;min-height:0;min-width:0;display:flex;flex-direction:column;gap:4px}
+  .app:has(.game) .game .opp{flex:none;flex-wrap:nowrap;overflow:hidden;white-space:nowrap;gap:8px;font-size:12px;justify-content:center}
+  .app:has(.game) .game .opp .backs{display:none}
+  .app:has(.game) .game .opp .muted{overflow:hidden;text-overflow:ellipsis}
+  .app:has(.game) .game .boardbox{flex:1 1 auto;min-height:0;container-type:size;display:flex;justify-content:center;align-items:flex-start}
+  .app:has(.game) .game .boardbox .board{box-sizing:border-box;width:min(100cqw,100cqh);height:min(100cqw,100cqh);max-width:none}
+  .app:has(.game) .gbottom .handpanel{padding:4px 6px 6px;gap:0;border-radius:8px}
+  .app:has(.game) .gbottom .hand-head{display:none}
+  .app:has(.game) .game .handrow{flex-direction:row;gap:6px;align-items:stretch}
+  .app:has(.game) .game .hand{flex:1 1 auto;min-width:0;flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;overflow-y:hidden;padding:8px 2px 2px;gap:8px;zoom:.5;scrollbar-width:none}
+  .app:has(.game) .game .hand::-webkit-scrollbar{display:none}
+  /* the hand row still swipes sideways; any other finger movement on a card drags it */
+  .app:has(.game) .game .hand .card{touch-action:pan-x;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  .app:has(.game) .game .handrow .discard-row{flex:0 0 66px;flex-direction:column;flex-wrap:nowrap;gap:4px;padding-top:2px}
+  .app:has(.game) .game .handrow .dz{flex:1 1 auto;font-size:9px;line-height:1.2;padding:3px;display:flex;align-items:center;text-align:center}
+  .app:has(.game) .game .handrow .discard-row .btn{font-size:9px;padding:5px 3px;letter-spacing:.06em;line-height:1.2}
+  .app:has(.game) .game .gside{grid-area:side;flex-direction:row;height:auto;min-height:0;gap:6px;overflow:visible}
+  .app:has(.game) .game .gside .mpanel{display:none}
+  .app:has(.game) .game .gside .tpanel{flex:1 1 auto;padding:6px 10px;gap:2px 8px;border-radius:8px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;overflow:hidden}
+  .app:has(.game) .game .gside .tpanel .turn{grid-column:1;font-size:14px;gap:6px}
+  .app:has(.game) .game .gside .tpanel .turn .caps{font-size:11px}
+  .app:has(.game) .game .gside .tpanel .hint-line{grid-column:1;font-size:11.5px;line-height:1.3;-webkit-line-clamp:2}
+  .app:has(.game) .game .gside .tpanel .row{grid-column:2;grid-row:1 / span 2;flex-direction:column;gap:4px;align-items:stretch}
+  .app:has(.game) .game .gside .tpanel .btn{padding:6px 10px;font-size:10px;min-height:0}
+  .app:has(.game) .game .coachside{grid-area:coach;max-height:26vh;max-height:26dvh;width:auto;justify-self:stretch;overflow:auto}
+  /* in the tutorial the coach already shows the step; the bottom panel only appears for a Checker chain (Finish turn) */
+  .app:has(.game) .game.tut:not(.chaining) .gside{display:none}
+  .app:has(.game) .game.tut:not(.chaining){grid-template-rows:auto minmax(0,1fr) auto}
+  /* a short label for the discard zone on phones */
+  .app:has(.game) .game .handrow .dz{font-size:0}
+  .app:has(.game) .game .handrow .dz::after{content:"Drop here to discard";font-size:9.5px;line-height:1.25}
+  .app:has(.game) .game .coachside>.panel{margin:0;padding:8px 12px;gap:4px;border-radius:8px}
+  .app:has(.game) .game .coachside .coach h3{font-size:17px;margin:0}
+  .app:has(.game) .game .coachside .coach p{font-size:11.5px;line-height:1.32;margin:0 0 3px}
+  .app:has(.game) .game .coachside .coach .coach-step{padding:4px 8px}
+  /* the step to do comes first, so it is visible without scrolling the coach box */
+  .app:has(.game) .game .coachside .coach .coach-top{order:0}
+  .app:has(.game) .game .coachside .coach .coach-step,.app:has(.game) .game .coachside .coach .coach-done,.app:has(.game) .game .coachside .coach .coach-done+.row{order:1}
+  .app:has(.game) .game .coachside .coach h3{order:2}
+  .app:has(.game) .game .coachside .coach>p:not(.coach-step):not(.coach-done){order:3}
+  .app:has(.game) .game .coachside .coach .coach-ctl{order:4}
+  .turnban{font-size:22px;letter-spacing:.12em;padding:10px 16px;max-width:calc(100vw - 32px);text-align:center}
+  .app:has(.game) .game .coachside .coach .row{gap:6px;flex-wrap:wrap}
+  .app:has(.game) .game .coachside .coach .btn{padding:5px 8px;font-size:9.5px;min-height:0}
+}
+.touch-ghost{box-shadow:0 12px 28px rgba(0,0,0,.6)}
+
+/* ===== Phones v2: name tabs and a smaller lesson box (2026-10-27) ===== */
+@media (max-width:760px){
+  .app:has(.game) .game .hand{zoom:1;align-items:center;padding:6px 2px 4px;gap:6px}
+  .app:has(.game) .game .hand .card{width:auto;max-width:160px;height:auto;padding:2px;border-radius:6px;flex:none;animation:none}
+  .app:has(.game) .game .hand .card .cf{height:auto;border-radius:4px}
+  .app:has(.game) .game .hand .card .art,.app:has(.game) .game .hand .card small,.app:has(.game) .game .hand .card .cfoot{display:none}
+  .app:has(.game) .game .hand .card .ctop{margin:0;padding:3px 6px;gap:4px;border-radius:3px}
+  .app:has(.game) .game .hand .card .ctt{font-size:11.5px;line-height:1.15;letter-spacing:0}
+  .app:has(.game) .game .hand .card .cat{font-size:6.5px}
+  .app:has(.game) .game .hand .card .gem{display:none}
+  /* every card stays visible: the name tabs wrap onto as many lines as they need, and the Discard button flows in after them */
+  .app:has(.game) .game .handrow{display:flex;flex-wrap:wrap;gap:4px;align-items:center;justify-content:flex-start;padding:4px 0 2px}
+  .app:has(.game) .game .hand .card{padding:1.5px;border-radius:5px}
+  .app:has(.game) .game .hand,.app:has(.game) .game .handrow .discard-row{display:contents}
+  .app:has(.game) .game .hand .card{touch-action:none}
+  .app:has(.game) .game .hand .card .cat{display:none}
+  .app:has(.game) .game .hand .card:hover:not(:disabled){transform:none}
+  .app:has(.game) .game .hand .card.sel{transform:translateY(-3px)}
+  .app:has(.game) .game .hand .card.coachc{animation:none}
+  .app:has(.game) .game .hand .card.used{min-width:0;padding:6px 10px;font-size:12px}
+  .app:has(.game) .game .handrow{align-items:center}
+  .app:has(.game) .gbottom .handpanel{padding:2px 6px 4px}
+  /* the Discard button is also where you drop a card to discard it */
+  .app:has(.game) .game .handrow .discard-row{flex:0 0 auto;flex-direction:row;padding-top:0}
+  .app:has(.game) .game .handrow .dz{display:none}
+  .app:has(.game) .game .handrow .discard-row .btn{font-size:0;padding:4px 9px;min-height:0;align-self:stretch}
+  .app:has(.game) .game .handrow .discard-row .btn::after{content:"Discard";font-size:9.5px;letter-spacing:.08em}
+  /* smaller lesson box */
+  .app:has(.game) .game .coachside{max-height:20vh;max-height:20dvh}
+  .app:has(.game) .game .coachside>.panel{padding:6px 10px;gap:3px}
+  .app:has(.game) .game .coachside .coach .coach-top .tag{font-size:9.5px}
+  .app:has(.game) .game .coachside .coach h3{font-size:15px}
+}
+
 </style>
 <style>html,body{margin:0;min-height:100%;background:#0b0a0e}#app{min-height:100vh}</style>
 </head>
@@ -818,7 +933,7 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
     <label class="fld"><span>Player name</span><input type="text" maxlength="16" placeholder="CaveRunner" value="{{netName}}" onInput="{{netNameIn}}" onKeyDown="{{netNameKey}}"></label>
     <div class="fld agefld"><label for="agesl">Your age: <b>{{netAgeLabel}}</b></label>
       <input id="agesl" class="agesl" type="range" min="6" max="60" step="1" value="{{netAgeVal}}" aria-valuetext="{{netAgeLabel}}" onInput="{{netAgeIn}}" onChange="{{netAgeIn}}">
-      <span class="agescale" aria-hidden="true"><i>6</i><i>13</i><i>17</i><i>60+</i></span>
+      <span class="agescale" aria-hidden="true"><i style="--p:0">6</i><i style="--p:0.1296">13</i><i style="--p:0.2037">17</i><i style="--p:1">60+</i></span>
     </div>
     <label class="fld"><span>Your state, for state leaderboards (optional)</span>
       <select onChange="{{netRegionIn}}"><template data-sc-for list="{{netRegions}}" as="r" hint-placeholder-count="3"><option value="{{r.v}}" selected="{{r.sel}}">{{r.label}}</option></template></select>
@@ -971,7 +1086,7 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
     <label class="fld"><span>Player name</span><input type="text" maxlength="16" placeholder="CaveRunner" value="{{netName}}" onInput="{{netNameIn}}" onKeyDown="{{netNameKey}}"></label>
     <div class="fld agefld"><label for="agesl">Your age: <b>{{netAgeLabel}}</b></label>
       <input id="agesl" class="agesl" type="range" min="6" max="60" step="1" value="{{netAgeVal}}" aria-valuetext="{{netAgeLabel}}" onInput="{{netAgeIn}}" onChange="{{netAgeIn}}">
-      <span class="agescale" aria-hidden="true"><i>6</i><i>13</i><i>17</i><i>60+</i></span>
+      <span class="agescale" aria-hidden="true"><i style="--p:0">6</i><i style="--p:0.1296">13</i><i style="--p:0.2037">17</i><i style="--p:1">60+</i></span>
     </div>
     <label class="fld"><span>Your state, for state leaderboards (optional)</span>
       <select onChange="{{netRegionIn}}"><template data-sc-for list="{{netRegions}}" as="r" hint-placeholder-count="3"><option value="{{r.v}}" selected="{{r.sel}}">{{r.label}}</option></template></select>
@@ -1096,7 +1211,7 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
     <div class="boardbox">
     <div class="board {{boardCls}}" style="border-color: {{boardFrame}}; background: {{boardFrame}}">
       <template data-sc-for list="{{cells}}" as="cell" hint-placeholder-count="256">
-        <button type="button" class="sq {{cell.cls}}" style="background: {{cell.bg}}" aria-label="{{cell.label}}" onClick="{{cell.click}}" onDragOver="{{cell.dragOver}}" onDrop="{{cell.drop}}">
+        <button type="button" class="sq {{cell.cls}}" data-sq="{{cell.sq}}" style="background: {{cell.bg}}" aria-label="{{cell.label}}" onClick="{{cell.click}}" onDragOver="{{cell.dragOver}}" onDrop="{{cell.drop}}">
           <template data-sc-if value="{{cell.wall}}" hint-placeholder-val="{{ false }}"><span class="rock" style="box-shadow: {{cell.shadow}}"></span></template>
           <template data-sc-if value="{{cell.last}}" hint-placeholder-val="{{ false }}"><span class="lastm"></span></template>
           <template data-sc-if value="{{cell.hasRank}}" hint-placeholder-val="{{ false }}"><span class="coord r" style="color: {{cell.coordColor}}">{{cell.rank}}</span></template>
@@ -1123,15 +1238,15 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
     <div class="handrow">
     <div class="hand">
       <template data-sc-for list="{{hand}}" as="card" hint-placeholder-count="5">
-        <button type="button" class="{{card.cls}}" disabled="{{card.disabled}}" draggable="{{card.draggable}}" onDragStart="{{card.dragStart}}" onDragEnd="{{card.dragEnd}}" aria-pressed="{{card.selected}}" aria-label="{{card.label}}" onClick="{{card.click}}">
+        <button type="button" class="{{card.cls}}" data-hi="{{card.idx}}" disabled="{{card.disabled}}" draggable="{{card.draggable}}" onDragStart="{{card.dragStart}}" onDragEnd="{{card.dragEnd}}" aria-pressed="{{card.selected}}" aria-label="{{card.label}}" onClick="{{card.click}}">
           <span class="cf"><span class="ctop"><span class="ctx"><em class="cat">{{card.cat}}</em><span class="ctt">{{card.title}}</span></span><i class="gem" title="{{card.rname}}"></i></span><span class="art"><template data-sc-if value="{{card.once}}" hint-placeholder-val="{{ false }}"><span class="once" title="One use: spent after it triggers"><b>1&#215;</b>One use</span></template><span class="dg"><template data-sc-for list="{{card.dg}}" as="d" hint-placeholder-count="25"><i class="{{d}}"></i></template><svg class="dgp" viewBox="0 0 100 100"><path d="{{card.pd}}" fill="#fffaf0" stroke="#2a2118" stroke-width="7" stroke-linejoin="round" style="paint-order:stroke"></path></svg></span></span><small>{{card.sub}}</small><span class="cfoot"><span>{{card.no}}</span><span class="micro">MORPHCARD &#183; OFFICIAL</span><span>{{card.rl}}</span></span></span>
         </button>
       </template>
       <template data-sc-if value="{{handEmpty}}" hint-placeholder-val="{{ false }}"><div class="card used">Hand empty</div></template>
     </div>
     <div class="discard-row">
-      <div class="dz {{dzCls}}" onDragOver="{{dzOver}}" onDrop="{{dzDrop}}">Drag a card here to discard it (ends your turn)</div>
-      <button type="button" class="btn btn-s" disabled="{{noDiscard}}" onClick="{{discardSel}}">Discard selected card</button>
+      <div class="dz {{dzCls}}" onDragOver="{{dzOver}}" onDrop="{{dzDrop}}">Drop a card here to discard it (ends your turn)</div>
+      <button type="button" class="btn btn-s" disabled="{{noDiscard}}" onClick="{{discardSel}}">Discard selected</button>
     </div>
     </div>
     </div>
@@ -2560,6 +2675,51 @@ class Component extends DCLogic {
     if (t && Component.targetsFor(g.board, g.turn, t, g).indexOf(i) >= 0) this.perform({ type: Component.actType(t), card: t, sq: i, hi: idx });
     else this.setGame({ selCard: -1 });
   }
+  /* Finger dragging: press a hand card and slide (upward, toward the board) onto a square or the discard zone.
+     Mouse dragging keeps using HTML5 drag-and-drop; a tap still selects the card, then a tap on a square plays it. */
+  installTouchDrag() {
+    this._touchBooted = true;
+    let drag = null;
+    const clear = () => { if (drag && drag.ghost && drag.ghost.parentNode) drag.ghost.parentNode.removeChild(drag.ghost); drag = null; };
+    document.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' || drag) return;
+      const card = e.target && e.target.closest ? e.target.closest('.hand .card[data-hi]') : null;
+      if (card) drag = { hi: Number(card.getAttribute('data-hi')), x: e.clientX, y: e.clientY, card: card, on: false, id: e.pointerId };
+    }, { passive: true });
+    document.addEventListener('pointermove', (e) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      if (!drag.on) {
+        if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 10) return;
+        const g = this.state.game;
+        if (!this.canAct(g) || g.chain || g.haste) { drag = null; return; }
+        const r = drag.card.getBoundingClientRect(), gh = drag.card.cloneNode(true);
+        gh.removeAttribute('data-hi'); gh.classList.add('touch-ghost');
+        gh.style.cssText = 'position:fixed;left:0;top:0;margin:0;pointer-events:none;z-index:9999;opacity:.92;width:' + r.width + 'px;height:' + r.height + 'px';
+        document.body.appendChild(gh);
+        Object.assign(drag, { on: true, ghost: gh, w: r.width, h: r.height });
+        this.setGame({ selCard: drag.hi, selected: -1, tp: -1, note: '' });
+      }
+      /* keep the card above the fingertip so the target square stays visible */
+      drag.ghost.style.transform = 'translate(' + (e.clientX - drag.w / 2) + 'px,' + (e.clientY - drag.h - 12) + 'px) scale(1.15)';
+    }, { passive: true });
+    document.addEventListener('pointerup', (e) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const was = drag; clear();
+      if (was.on) this.touchDrop(was.hi, document.elementFromPoint(e.clientX, e.clientY));
+    });
+    document.addEventListener('pointercancel', clear);
+  }
+  touchDrop(hi, el) {
+    const g = this.state.game; if (!this.canAct(g) || g.chain || g.haste) return;
+    const t = g.hands[g.turn][hi]; if (!t) return;
+    if (el && el.closest && el.closest('.dz, .discard-row')) { this.perform({ type: 'discard', card: t, hi: hi }); return; }
+    const cell = el && el.closest ? el.closest('[data-sq]') : null;
+    if (!cell) return; /* dropped elsewhere: the card stays selected, so a tap on a square still plays it */
+    const i = Number(cell.getAttribute('data-sq'));
+    if (Component.targetsFor(g.board, g.turn, t, g).indexOf(i) < 0) { this.setGame({ note: 'That card can\'t go there. Drop it on a glowing square.' }); return; }
+    if (t === 'transpose') { this.setGame({ selCard: hi, tp: i, note: 'Now pick the piece to swap with.' }); return; }
+    this.perform({ type: Component.actType(t), card: t, sq: i, hi: hi });
+  }
   dzOver(e) { if (this._dragIdx != null && e.preventDefault) { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'; } }
   dzDrop(e) {
     const g = this.state.game, idx = this._dragIdx;
@@ -3011,6 +3171,7 @@ class Component extends DCLogic {
 
   renderVals() {
     this.persist();
+    if (!this._touchBooted && typeof document !== 'undefined' && document.addEventListener) this.installTouchDrag();
     if (!this._netBooted) {
       /* if this browser has a saved online session, connect quietly so the menu can show who is signed in */
       this._netBooted = true;
@@ -3326,7 +3487,7 @@ class Component extends DCLogic {
         hasRank: c === (flip ? 15 : 0) && !wall, hasFile: r === (flip ? 0 : 15) && !wall, rank: String(16 - r), file: 'abcdefghijklmnop'[c], coordColor: light ? bl.dark : bl.light,
         piece: !!p, pcCls: pcCls, pcStyle: pcStyle, pd: v.pd, fill: v.fill, edge: v.edge, pips: Component.attrsOf(p), hasPips: !!(p && Component.attrsOf(p).length), shielded: !!(p && p.shield), snared: !!(p && p.snared),
         fx: !!fi, fxAnim: s.fx ? s.fx.anim : 'fade', fxDelay: fi ? fi.delay + 's' : '0s', fxD: (fi && fi.nog) ? '' : fv.pd, fxFill: fv.fill, fxEdge: fv.edge,
-        label: wall ? (hint === 'h-brk' ? 'Rock wall, a Marcher can break through' : 'Rock wall') : lbl + (p && p.snared ? ', snared' : ''), click: () => this.clickCell(i),
+        sq: i, label: wall ? (hint === 'h-brk' ? 'Rock wall, a Marcher can break through' : 'Rock wall') : lbl + (p && p.snared ? ', snared' : ''), click: () => this.clickCell(i),
         dragOver: (e) => this.dragOver(e, i), drop: (e) => this.dropCard(e, i)
       });
     }
@@ -3344,7 +3505,7 @@ class Component extends DCLogic {
       const v = this.cardView(type), sel = g.selCard === idx;
       const dim = humanTurn && !busy && !Component.targetsFor(g.board, g.turn, type, g).length;
       const coach = !!(tutStep && tutStep.card === type);
-      return Object.assign({}, v, { cls: v.cls + (sel ? ' sel' : '') + (dim && !coach ? ' dim' : '') + (coach ? ' coachc' : ''), selected: sel, disabled: !humanTurn || busy, label: NM[type] + ' card', click: () => this.clickCard(idx), draggable: humanTurn && !busy, dragStart: (e) => this.dragStart(e, idx), dragEnd: () => this.dragEnd() });
+      return Object.assign({}, v, { idx: idx, cls: v.cls + (sel ? ' sel' : '') + (dim && !coach ? ' dim' : '') + (coach ? ' coachc' : ''), selected: sel, disabled: !humanTurn || busy, label: NM[type] + ' card', click: () => this.clickCard(idx), draggable: humanTurn && !busy, dragStart: (e) => this.dragStart(e, idx), dragEnd: () => this.dragEnd() });
     });
     vals.handEmpty = g.hands[viewer].length === 0;
     vals.handCls = ''; vals.handStyle = '';
@@ -3360,7 +3521,7 @@ class Component extends DCLogic {
     vals.dzOver = (e) => this.dzOver(e); vals.dzDrop = (e) => this.dzDrop(e); vals.discardSel = () => this.discardSel();
     vals.capText = online ? 'You ' + g.caps[viewer] + '  |  ' + oppNm + ' ' + g.caps[opp] : (g.mode === 'bot' ? 'You ' : 'White ') + g.caps[g.mode === 'bot' ? g.human : 'w'] + '  |  ' + (g.mode === 'bot' ? 'Bot ' : 'Black ') + g.caps[g.mode === 'bot' ? opp : 'b'];
 
-    vals.turnDot = g.turn; vals.chaining = busy && humanTurn; vals.gameCls = g.tut ? 'tut' : '';
+    vals.turnDot = g.turn; vals.chaining = busy && humanTurn; vals.gameCls = (g.tut ? 'tut' : '') + (busy && humanTurn ? ' chaining' : '');
     vals.showBan = !g.over && !busy && (!g.tut || ((g.turnNo || 0) > 0 && !g.tut.done));
     vals.banCls = 'turnban ' + ((g.turnNo || 0) % 2 ? 'banA' : 'banB');
     vals.banText = g.tut ? 'Dummy passes · your turn' : online ? (g.turn === g.human ? 'Your turn' : oppNm + '\'s turn') : g.mode === 'bot' ? (g.turn === g.human ? 'Your turn' : 'Bot\'s turn') : nm(g.turn) + '\'s turn';
@@ -3370,7 +3531,7 @@ class Component extends DCLogic {
     if (g.note) hl = g.note;
     else if (g.over) hl = 'Game over.';
     /* the coach beside the board already shows the step, so this line only adds what the coach does not */
-    else if (g.tut) hl = g.tut.done ? 'Lesson complete. Press Next lesson in the coach.' : g.chain ? 'Checker: pick your next capture on a red diagonal, or finish your turn.' : 'Follow the step in the coach beside the board.';
+    else if (g.tut) hl = g.tut.done ? 'Lesson complete. Press Next lesson in the coach.' : g.chain ? 'Checker: pick your next capture on a red diagonal, or finish your turn.' : 'Follow the step in the coach.';
     else if (!humanTurn) hl = online ? 'Waiting for ' + oppNm + ' to move. Their move appears here as soon as they make it.' : 'The bot is choosing a move or a card.';
     else if (g.chain) hl = 'Checker: pick your next capture on a red diagonal, or finish your turn.';
     else if (g.haste) hl = 'Haste: move this piece again (no captures, not onto the far row), or Finish turn to keep Haste for later.';
