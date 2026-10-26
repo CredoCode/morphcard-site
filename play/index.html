@@ -638,8 +638,6 @@ sc-if,sc-for{display:contents}
 .net-card{max-width:560px;margin-bottom:18px}
 .net-card .fld{margin:6px 0 12px}
 .net-card .fld input{background:#0d0c10;color:#f4ecdc;border:1px solid #3a352a;border-radius:2px;padding:9px 11px;font:inherit;font-size:15px}
-.chk{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:14px}
-.chk input{width:18px;height:18px;accent-color:#c8a96a}
 .net-err,.net-msg{max-width:720px;margin:0 0 14px}
 .fcode{display:flex;align-items:center;gap:12px;margin:6px 0 14px}
 .fcode b{font:700 22px/1 'Hanken Grotesk',sans-serif;letter-spacing:.06em;color:#e8cf93;font-variant-numeric:lining-nums}
@@ -683,6 +681,38 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
 .lockmsg{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0 0;font-size:14px;color:#cfc7b4}
 .pick{margin:6px 0 4px}
 .frate{margin-left:auto;font-size:12px;color:#c8a96a;font-variant-numeric:lining-nums}
+
+/* ===== Game layout v4 (2026-10-27): board on top, the hand under it, then a dock with the turn panel and Moves.
+   Everything under the board has a fixed height, so the board never changes size between turns. ===== */
+.lockmsg.err{color:#ff9a8a}
+.gside .tpanel .turn{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.gside .tpanel .caps{margin-left:auto;font-size:13px}
+.gside .tpanel .hint-line{margin:0;font-size:14px;line-height:1.35;min-height:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.gside .tpanel .row{flex-wrap:nowrap}
+@media (min-width:761px){
+  .app:has(.game) .game{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto auto;grid-template-areas:"board" "hand" "side";gap:10px}
+  .app:has(.game) .game .boardbox{justify-content:center}
+  .app:has(.game) .game .opp{justify-content:center}
+  .app:has(.game) .game .gside{flex-direction:row;height:88px;min-height:0;overflow:visible;gap:12px}
+  .app:has(.game) .game .gside .tpanel{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto 1fr;column-gap:14px;align-items:start}
+  .app:has(.game) .game .gside .tpanel>sc-if:first-child,.app:has(.game) .game .gside .tpanel .turn{grid-column:1}
+  .app:has(.game) .game .gside .tpanel .hint-line{grid-column:1;font-size:13px}
+  .app:has(.game) .game .gside .tpanel .row{grid-column:2;grid-row:1 / span 2;align-self:center;gap:8px}
+  .app:has(.game) .game .gside .tpanel .btn{padding:9px 14px;font-size:11px}
+  .app:has(.game) .game .gbottom .hand-head{line-height:1.1}
+  .app:has(.game) .game .gside.tutdock{height:200px}
+  .app:has(.game) .game .gside .panel{min-height:0;overflow:auto;padding:10px 16px;gap:6px;border-radius:12px}
+  .app:has(.game) .game .gside .tpanel{flex:0 1 640px}
+  .app:has(.game) .game .gside .coach{flex:1 1 560px}
+  .app:has(.game) .game .gside .coach p{margin:0 0 4px}
+  .app:has(.game) .game .gside .mpanel{flex:1 1 320px;overflow:hidden}
+  .app:has(.game) .game .gside .mpanel h3{font-size:14px;letter-spacing:.14em;text-transform:uppercase;margin:0}
+  .app:has(.game) .game .gside .mpanel .log{max-height:none;flex:1 1 auto;min-height:0;font-size:13px}
+}
+@media (max-width:760px){
+  .game{grid-template-areas:"board" "hand" "side"}
+  .game .gside .tpanel .hint-line{-webkit-line-clamp:3}
+}
 </style>
 <style>html,body{margin:0;min-height:100%;background:#0b0a0e}#app{min-height:100vh}</style>
 </head>
@@ -852,6 +882,7 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
     <div class="row">
       <template data-sc-if value="{{deckEditable}}" hint-placeholder-val="{{ true }}"><button type="button" class="btn btn-p" onClick="{{fillDeck}}">Fill to {{deckSize}}</button>
       <button type="button" class="btn btn-g" onClick="{{resetDeck}}">Reset to default</button></template>
+      <template data-sc-if value="{{hasDeckErr}}" hint-placeholder-val="{{ false }}"><p class="lockmsg err" role="alert">{{deckErr}}</p></template>
       <template data-sc-if value="{{deckLocked}}" hint-placeholder-val="{{ false }}"><p class="lockmsg">Guests play the starter deck. <button type="button" class="btn btn-s" onClick="{{homeSignIn}}">Sign in</button> to buy card packs and build your own deck.</p></template>
     </div>
   </div>
@@ -1017,48 +1048,8 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
     </div>
     </div>
 
-    <p class="hint-line" role="status">{{hintLine}}</p>
-    <template data-sc-if value="{{chaining}}" hint-placeholder-val="{{ false }}">
-      <div class="row"><button type="button" class="btn btn-p" onClick="{{finishCapture}}">Finish turn</button></div>
-    </template>
-
   </div>
 
-  <aside class="gside">
-    <template data-sc-if value="{{isTut}}" hint-placeholder-val="{{ false }}">
-    <div class="panel coach" role="region" aria-label="Tutorial coach">
-      <div class="coach-top"><span class="tag">Lesson {{tutNo}} of {{tutCount}}</span><span class="tdots"><template data-sc-for list="{{tutDots}}" as="d" hint-placeholder-count="7"><i class="{{d.cls}}"></i></template></span></div>
-      <h3>{{tutTitle}}</h3>
-      <p>{{tutText}}</p>
-      <template data-sc-if value="{{tutWorking}}" hint-placeholder-val="{{ true }}"><p class="coach-step" role="status"><b>Your turn {{tutTurn}} · Step {{tutStepNo}} of {{tutSteps}}</b>{{tutHint}}</p></template>
-      <template data-sc-if value="{{tutDoneNow}}" hint-placeholder-val="{{ false }}">
-        <p class="coach-done" role="status"><b>Lesson complete.</b> {{tutDoneText}}</p>
-        <div class="row"><button type="button" class="btn btn-p" onClick="{{tutNext}}">Next lesson</button></div>
-      </template>
-      <div class="row coach-ctl">
-        <button type="button" class="btn btn-g" onClick="{{tutRestart}}">Restart lesson</button>
-        <button type="button" class="btn btn-g" onClick="{{tutSkip}}">{{tutSkipLabel}}</button>
-        <button type="button" class="btn btn-g" onClick="{{tutExit}}">Exit</button>
-      </div>
-    </div>
-    </template>
-    <template data-sc-if value="{{notTut}}" hint-placeholder-val="{{ true }}">
-    <div class="panel">
-      <div class="turn"><span class="dot {{turnDot}}"></span>{{turnText}}</div>
-      <p class="muted">Captures: {{capText}}</p>
-      <div class="row">
-        <button type="button" class="btn btn-g" onClick="{{resign}}">Resign</button>
-        <button type="button" class="btn btn-g" onClick="{{goHome}}">Leave</button>
-      </div>
-    </div>
-    </template>
-    <div class="panel">
-      <h3>Moves</h3>
-      <ol class="log" reversed>
-        <template data-sc-for list="{{logLines}}" as="l" hint-placeholder-count="3"><li>{{l.t}}</li></template>
-      </ol>
-    </div>
-  </aside>
 
   <section class="gbottom" aria-label="Your hand">
     <div class="panel handpanel {{handCls}}" style="{{handStyle}}">
@@ -1079,6 +1070,41 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
     </div>
     </div>
   </section>
+
+  <aside class="gside {{sideCls}}">
+    <template data-sc-if value="{{isTut}}" hint-placeholder-val="{{ false }}">
+    <div class="panel coach" role="region" aria-label="Tutorial coach">
+      <div class="coach-top"><span class="tag">Lesson {{tutNo}} of {{tutCount}}</span><span class="tdots"><template data-sc-for list="{{tutDots}}" as="d" hint-placeholder-count="7"><i class="{{d.cls}}"></i></template></span></div>
+      <h3>{{tutTitle}}</h3>
+      <p>{{tutText}}</p>
+      <template data-sc-if value="{{tutWorking}}" hint-placeholder-val="{{ true }}"><p class="coach-step" role="status"><b>Your turn {{tutTurn}} · Step {{tutStepNo}} of {{tutSteps}}</b>{{tutHint}}</p></template>
+      <template data-sc-if value="{{tutDoneNow}}" hint-placeholder-val="{{ false }}">
+        <p class="coach-done" role="status"><b>Lesson complete.</b> {{tutDoneText}}</p>
+        <div class="row"><button type="button" class="btn btn-p" onClick="{{tutNext}}">Next lesson</button></div>
+      </template>
+      <div class="row coach-ctl">
+        <button type="button" class="btn btn-g" onClick="{{tutRestart}}">Restart lesson</button>
+        <button type="button" class="btn btn-g" onClick="{{tutSkip}}">{{tutSkipLabel}}</button>
+        <button type="button" class="btn btn-g" onClick="{{tutExit}}">Exit</button>
+      </div>
+    </div>
+    </template>
+    <div class="panel tpanel">
+      <template data-sc-if value="{{notTut}}" hint-placeholder-val="{{ true }}"><div class="turn"><span class="dot {{turnDot}}"></span>{{turnText}}<span class="muted caps">Captures: {{capText}}</span></div></template>
+      <p class="hint-line" role="status">{{hintLine}}</p>
+      <div class="row">
+        <template data-sc-if value="{{chaining}}" hint-placeholder-val="{{ false }}"><button type="button" class="btn btn-p" onClick="{{finishCapture}}">Finish turn</button></template>
+        <template data-sc-if value="{{notTut}}" hint-placeholder-val="{{ true }}"><button type="button" class="btn btn-g" onClick="{{resign}}">Resign</button>
+        <button type="button" class="btn btn-g" onClick="{{goHome}}">Leave</button></template>
+      </div>
+    </div>
+    <div class="panel mpanel">
+      <h3>Moves</h3>
+      <ol class="log" reversed>
+        <template data-sc-for list="{{logLines}}" as="l" hint-placeholder-count="3"><li>{{l.t}}</li></template>
+      </ol>
+    </div>
+  </aside>
 
   <template data-sc-if value="{{showBan}}" hint-placeholder-val="{{ false }}"><div class="{{banCls}}" aria-hidden="true">{{banText}}</div></template>
 
@@ -1394,7 +1420,8 @@ class Component extends DCLogic {
   /* mirror the signed-in account's server-owned progress into state (never written to the guest save) */
   applyAccount(a) {
     if (!a) return;
-    this.setState({ acct: true, coins: a.coins, collection: a.collection, deck: a.deck, owned: a.owned, equipped: a.equipped, stats: Object.assign({ played: 0, wins: 0, losses: 0, streak: 0, best: 0 }, a.stats), tutDone: a.tutDone });
+    /* while a deck edit is waiting to be saved, keep the deck on screen instead of the server's older copy */
+    this.setState({ acct: true, coins: a.coins, collection: a.collection, deck: this._deckDirty ? this.state.deck : a.deck, owned: a.owned, equipped: a.equipped, stats: Object.assign({ played: 0, wins: 0, losses: 0, streak: 0, best: 0 }, a.stats), tutDone: a.tutDone });
     const d = this.state.net.data; if (d) this.netSet({ data: Object.assign({}, d, { account: a }) });
   }
   /* leaving an account: bring back this device's guest progress */
@@ -1405,7 +1432,9 @@ class Component extends DCLogic {
     this._savedJson = null;
     this.setState(g);
   }
-  static SAVE_FIELDS = ['coins', 'collection', 'deck', 'owned', 'equipped', 'stats', 'tutDone', 'muted', 'shopTab', 'age17', 'guest'];
+  static SAVE_FIELDS = ['coins', 'collection', 'deck', 'owned', 'equipped', 'stats', 'tutDone', 'muted', 'shopTab', 'age17', 'guest', 'tutSeen'];
+  /* device settings saved even while an account is signed in (the account's progress lives on the server) */
+  static DEVICE_FIELDS = ['muted', 'shopTab', 'tutSeen'];
   static loadSave() {
     try {
       const raw = window.localStorage && window.localStorage.getItem(Component.SAVE_KEY);
@@ -1416,9 +1445,10 @@ class Component extends DCLogic {
     } catch (e) { return {}; }
   }
   persist() {
-    if (this.state.acct) return; /* account progress lives on the server */
     try {
-      const d = {}; Component.SAVE_FIELDS.forEach((k) => { d[k] = this.state[k]; });
+      /* signed in: keep this device's guest save and only update device settings */
+      const d = this.state.acct ? Component.loadSave() : {};
+      (this.state.acct ? Component.DEVICE_FIELDS : Component.SAVE_FIELDS).forEach((k) => { d[k] = this.state[k]; });
       const j = JSON.stringify(d);
       if (j !== this._savedJson) { window.localStorage.setItem(Component.SAVE_KEY, j); this._savedJson = j; }
     } catch (e) { /* storage unavailable (private window, blocked site data): play on without saving */ }
@@ -1529,7 +1559,7 @@ class Component extends DCLogic {
   netOnChange(p) {
     const g = this.state.game, row = p && (p.new || p.old);
     if (this.state.net.queue && p && p.eventType === 'INSERT' && p.new && p.new.status === 'active') { this.netStopQueue(); this.netLoadMatch(p.new.id).catch(() => {}); return; }
-    if (g && g.mode === 'online' && row && row.id === this._matchId) { this.netLoadMatch(this._matchId); return; }
+    if (g && g.mode === 'online' && row && row.id === this._matchId) { if (!this._acting) this.netLoadMatch(this._matchId).catch(() => {}); return; }
     clearTimeout(this._netT);
     this._netT = setTimeout(() => { if (this.state.net.phase === 'ready') this.netRefresh().catch(() => {}); }, 250);
   }
@@ -1567,8 +1597,8 @@ class Component extends DCLogic {
   async netSignOut() {
     await this.netRun(async () => { const sb = await this.sb(); await this.netTeardown(); await sb.auth.signOut(); this.netSet({ phase: 'signedOut', data: null, queue: false, msg: 'Signed out.' }); this.restoreGuest(); this.setState({ age17: null, guest: false, screen: 'start' }); });
   }
-  async netLoadMatch(id) {
-    const res = await this.netCall('view', { match: id });
+  async netLoadMatch(id) { this.netShowMatch(await this.netCall('view', { match: id }), id); }
+  netShowMatch(res, id) {
     if (!res.view) { this.netSet({ err: 'That match has not started yet.' }); return; }
     const g = this.state.game, v = res.view;
     const fx = v.fx && (!g || !g.fx || g.fx.id !== v.fx.id) ? v.fx : null;
@@ -1615,19 +1645,49 @@ class Component extends DCLogic {
     }
   }
   netSaveDeckSoon() {
+    this._deckDirty = true;
     clearTimeout(this._deckT);
     this._deckT = setTimeout(async () => {
-      try { const r = await this.netCall('save_deck', { deck: this.state.deck }); this.applyAccount(r.account); }
-      catch (e) { this.netSet({ err: (e && e.message) || 'Could not save your deck.' }); try { await this.netRefresh(); } catch (e2) { /* keep */ } }
-    }, 700);
+      const sent = JSON.stringify(this.state.deck);
+      try {
+        const r = await this.netCall('save_deck', { deck: this.state.deck });
+        if (JSON.stringify(this.state.deck) === sent) this._deckDirty = false; /* otherwise a newer edit is still waiting */
+        this.applyAccount(r.account);
+        this.setState({ deckErr: '' });
+      } catch (e) {
+        this._deckDirty = false;
+        this.setState({ deckErr: (e && e.message) || 'Could not save your deck.' });
+        try { await this.netRefresh(); } catch (e2) { /* keep */ }
+      }
+    }, 600);
+  }
+  /* Play the move on this screen right away with the same rules the server runs; the server's reply then replaces it.
+     Cards drawn at the end of the turn are only known to the server, so the hand shows them when the reply arrives. */
+  netPreview(g, a) {
+    try {
+      const sim = Object.create(Component.prototype);
+      sim.state = { game: Object.assign(JSON.parse(JSON.stringify(g)), { mode: 'server', selected: -1, selCard: -1 }), equipped: this.state.equipped, muted: true, fx: null };
+      sim.sfx = function () {}; sim.setState = function (p) { Object.assign(sim.state, p); };
+      sim.settle = function (ng, fx) { sim.state.game = ng; sim.state.fx = fx || null; };
+      sim.perform(a);
+      const ng = sim.state.game, me = g.human;
+      ng.mode = 'online'; ng.matchId = g.matchId; ng.oppName = g.oppName; ng.meName = g.meName; ng.human = me;
+      ng.hands = Object.assign({}, ng.hands, { [me]: ng.hands[me].filter(function (t) { return t !== '?'; }), [Component.other(me)]: g.hands[Component.other(me)] });
+      ng.decks = g.decks; ng.selected = -1; ng.selCard = -1; ng.note = '';
+      /* same numbering as the server, so its reply doesn't replay the capture effect */
+      ng.fx = sim.state.fx ? Object.assign({}, sim.state.fx, { id: ((g.fx && g.fx.id) || 0) + 1 }) : null;
+      if (ng.over) ng.over = null; /* the server announces the result */
+      this.setState({ game: ng, fx: ng.fx ? Object.assign({}, ng.fx, { id: Date.now() }) : this.state.fx });
+      if (ng.fx) { const fid = this.state.fx.id; setTimeout(() => { if (this.state.fx && this.state.fx.id === fid) this.setState({ fx: null }); }, 1500); }
+    } catch (e) { this.setGame({ selected: -1, selCard: -1, note: 'Sending your move…' }); }
   }
   async netAct(a) {
     const g = this.state.game;
     if (this._acting || !g || g.turn !== g.human) return;
     this._acting = true;
     this.sfx(a.type === 'move' ? (a.mv.caps.length ? 'capture' : 'move') : a.type === 'chain' || a.type === 'zap' ? 'capture' : a.type === 'place' ? 'place' : a.type === 'attach' ? 'card' : 'click');
-    this.setGame({ selected: -1, selCard: -1, note: 'Sending your move…' });
-    try { await this.netCall('act', { match: g.matchId, action: a }); await this.netLoadMatch(g.matchId); }
+    this.netPreview(g, a);
+    try { this.netShowMatch(await this.netCall('act', { match: g.matchId, action: a }), g.matchId); }
     catch (e) { this.setGame({ note: (e && e.message) || 'Could not send the move.' }); try { await this.netLoadMatch(g.matchId); } catch (e2) { /* keep what we have */ } }
     finally { this._acting = false; }
   }
@@ -1668,6 +1728,13 @@ class Component extends DCLogic {
     { id: 'retaliate', name: 'Retaliate', look: 'Dotted box.', blurb: 'Punish whoever captures it. Only one Retaliate per piece.', d: 'M92 36 H40 V14 L8 46 L40 78 V56 H92 Z' },
     { id: 'mobility', name: 'Mobility', look: 'Wavy box.', blurb: 'New ways to move, for this piece or its neighbours.', d: 'M50 8 L86 44 H66 L50 28 L34 44 H14 Z M50 48 L86 84 H66 L50 68 L34 84 H14 Z' }
   ];
+  /* the cards a pack can hold; rarer cards drop less often (pickWeighted) */
+  static packPool(p) {
+    if (p.pool === 'movement') return Component.BODIES;
+    if (p.pool === 'action') return ['zap'];
+    const sub = p.pool.indexOf('attr:') === 0 ? p.pool.slice(5) : null;
+    return sub ? Component.ATTRS.filter(function (t) { return Component.ATTR_SUB[t] === sub; }) : Component.ATTRS;
+  }
   static subOf(t) { const id = Component.ATTR_SUB[t]; return id ? Component.SUBCATS.find(function (s) { return s.id === id; }) : null; }
   /* A piece holds up to 3 attributes, and at most one per family, so stacks never become unremovable or double-punish one capture. */
   static ATTR_MAX = 3;
@@ -1738,8 +1805,11 @@ class Component extends DCLogic {
   static PACKS = [
     { id: 'move', name: 'Movement Pack', price: 120, n: 3, pool: 'movement', blurb: '3 random movement cards. Rare, Epic and Legendary cards drop less often.' },
     { id: 'megamove', name: 'Mega Movement Pack', price: 220, n: 6, pool: 'movement', blurb: '6 random movement cards. Better value and better odds of a rare find.' },
-    { id: 'attr', name: 'Attribute Pack', price: 100, n: 2, pool: 'attribute', blurb: '2 random attribute cards. Rare, Epic and Legendary cards drop less often.' },
-    { id: 'megaattr', name: 'Attribute Bundle', price: 220, n: 5, pool: 'attribute', blurb: '5 random attribute cards. Better value and better odds of a rare find.' },
+    /* attribute packs, one per subcategory (user request, 2026-10-27) */
+    { id: 'assault', name: 'Assault Pack', price: 100, n: 2, pool: 'attr:assault', blurb: '2 Assault attributes: Checker, Nuclear or Devour.' },
+    { id: 'guard', name: 'Guard Pack', price: 100, n: 2, pool: 'attr:guard', blurb: '2 Guard attributes: Shield, Anchor or Second Wind.' },
+    { id: 'retaliate', name: 'Retaliate Pack', price: 100, n: 2, pool: 'attr:retaliate', blurb: '2 Retaliate attributes: Mirror or Martyr.' },
+    { id: 'mobility', name: 'Mobility Pack', price: 100, n: 2, pool: 'attr:mobility', blurb: '2 Mobility attributes: Wall Breaker, Rally, Haste, Homeward or Blink.' },
     { id: 'action', name: 'Action Pack', price: 150, n: 2, pool: 'action', blurb: '2 Lightning action cards.' }
   ];
   static DATA = {
@@ -2559,7 +2629,7 @@ class Component extends DCLogic {
         g.over.reward = 0; g.over.why = 'Saving your reward…'; stats = this.state.stats;
       } else { coins += amt; g.over.reward = amt; g.over.why = why; }
     }
-    this.setState({ game: g, fx: fx || this.state.fx, coins: coins, stats: stats, tutDone: tutDone });
+    this.setState({ game: g, fx: fx || this.state.fx, coins: coins, stats: stats, tutDone: tutDone, tutSeen: !!(this.state.tutSeen || tutDone || serverReward && serverReward[0] === 'tutorial') });
     if (serverReward) this.netReward(serverReward[0], serverReward[1], g.id);
     if (fx) { const id = fx.id; setTimeout(() => { if (this.state.fx && this.state.fx.id === id) this.setState({ fx: null }); }, 1500); }
     if (!g.over && g.mode === 'bot' && g.turn !== g.human) { const gid = g.id; setTimeout(() => this.botTurn(gid), g.chain ? 700 : 850); }
@@ -2593,7 +2663,7 @@ class Component extends DCLogic {
     });
     return;
     const cards = [];
-    const pool = p.pool === 'movement' ? Component.BODIES : p.pool === 'action' ? ['zap'] : Component.ATTRS;
+    const pool = Component.packPool(p);
     for (let k = 0; k < p.n; k++) cards.push(Component.pickWeighted(pool));
     const col = Object.assign({}, s.collection);
     cards.forEach(function (t) { col[t] = (col[t] || 0) + 1; });
@@ -2669,11 +2739,11 @@ class Component extends DCLogic {
       equipped: Object.assign({}, s.equipped, { [cat]: it.id })
     });
   }
-  pview(c, look, type) {
+  pview(c, look, type, flip) {
     const fill = c === 'w' ? look.wf : look.bf, edge = c === 'w' ? look.we : look.be;
     let style = 'filter:drop-shadow(0 2px 1.5px rgba(0,0,0,.45))';
     if (look.glow) style = 'filter:drop-shadow(0 0 5px ' + fill + ') drop-shadow(0 2px 1.5px rgba(0,0,0,.4))';
-    return { pd: Component.PATHS[(type === 'march' || type === 'lancer') && c === 'b' ? type + 'd' : type] || Component.PATHS.pawn, fill: fill, edge: edge, style: style };
+    return { pd: Component.PATHS[(type === 'march' || type === 'lancer') && (c === 'b') !== !!flip ? type + 'd' : type] || Component.PATHS.pawn, fill: fill, edge: edge, style: style };
   }
   cardView(type) {
     const mark = {
@@ -2788,7 +2858,7 @@ class Component extends DCLogic {
       playBot: () => { this.sfx('click'); this.startGame('bot'); }, playLocal: () => { this.sfx('click'); this.startGame('local'); },
       rematch: () => { if (g && g.mode === 'online') { this.setState({ game: null }); go('online')(); this.netInit(); return; } this.startGame(g && g.mode !== 'tutorial' ? g.mode : 'bot'); },
       startTut: () => { this.sfx('click'); this.startTutorial(0); },
-      showTutItem: !s.tutDone, playLocalCls: 'mi' + (s.tutDone ? ' primary' : ''),
+      showTutItem: !(s.tutDone || s.tutSeen), playLocalCls: 'mi' + (s.tutDone || s.tutSeen ? ' primary' : ''),
       showPick: !!s.showPick, openPick: () => { this.sfx('click'); this.setState({ showPick: true }); }, closePick: () => this.setState({ showPick: false }),
       pickFriend: () => { this.sfx('click'); this.setState({ showPick: false }); this.startGame('local'); },
       pickBot: () => { this.sfx('click'); this.setState({ showPick: false }); this.startGame('bot'); },
@@ -2845,7 +2915,7 @@ class Component extends DCLogic {
     if (lockedTypes.length) vals.groups.push({ name: 'Locked Cards', gcls: '', hasLeg: false, note: s.acct ? 'You own none of these yet. Find them in card packs in the Shop.' : 'Sign in to collect these from card packs.', tiles: lockedTypes.map(tileOf) });
 
     const tabNames = (s.acct ? [['packs', 'Card packs']] : []).concat([['anim', 'Kill animations'], ['board', 'Board looks'], ['pieces', 'Piece looks'], ['back', 'Card backs']]);
-    vals.deckEditable = !!s.acct; vals.deckLocked = !s.acct;
+    vals.deckEditable = !!s.acct; vals.deckLocked = !s.acct; vals.deckErr = s.deckErr || ''; vals.hasDeckErr = !!s.deckErr;
     vals.shopGuest = !s.acct; vals.shopNote = s.acct ? 'Spend them on card packs and cosmetics.' : 'Guests can buy cosmetics.';
     const shownTab = s.shopTab === 'packs' && !s.acct ? 'anim' : s.shopTab;
     vals.shopTabs = tabNames.map((t) => ({ label: t[1], on: shownTab === t[0], cls: 'tab' + (shownTab === t[0] ? ' on' : ''), click: () => this.setState({ shopTab: t[0] }) }));
@@ -2859,7 +2929,7 @@ class Component extends DCLogic {
         const n = p.n, step = n <= 3 ? 14 : n <= 5 ? 10 : 8, gap = n <= 3 ? 18 : n <= 5 ? 14 : 11, out = [];
         for (let k = 0; k < n; k++) {
           const off = k - (n - 1) / 2, tf = 'translateX(' + (off * gap) + 'px) rotate(' + (off * step) + 'deg)';
-          out.push({ st: '--c:' + (packColor[p.pool] || '#c8a96a') + ';--t:' + tf + ';transform:' + tf });
+          out.push({ st: '--c:' + (packColor[p.pool.indexOf('attr:') === 0 ? 'attribute' : p.pool] || '#c8a96a') + ';--t:' + tf + ';transform:' + tf });
         }
         return out;
       };
@@ -2914,6 +2984,7 @@ class Component extends DCLogic {
       this.netRun(async () => {
         const st = await this.netCall('profile', { name: (this.state.net.name || '').trim(), confirmed13: true, over17: over17, region: this.state.net.region || '' });
         this.netSet({ data: st, editing: false, phase: st.profile ? 'ready' : 'needName', msg: st.profile ? (wasEditing ? 'Profile saved.' : 'Welcome, ' + st.profile.name + '!') : '' });
+        if (st.account) this.applyAccount(st.account);
         this.setState({ age17: st.profile ? !!st.profile.over17 : null });
       });
     };
@@ -3023,9 +3094,9 @@ class Component extends DCLogic {
         Component.targetsFor(g.board, g.turn, t).forEach(function (i) { if (t === 'pawn') placeT[i] = 1; else attT[i] = 1; });
       } else if (g.selected >= 0) Component.legalMoves(g.board, g.turn).filter(function (m) { return m.from === g.selected; }).forEach(function (m) { moveT[m.to] = m; });
     }
-    const cells = [];
-    for (let i = 0; i < 256; i++) {
-      const r = i >> 4, c = i & 15, raw = g.board[i], wall = !!(raw && raw.wall), p = wall ? null : raw, light = ((r + c) % 2) === 0;
+    const cells = [], flip = g.mode === 'online' && g.human === 'b';
+    for (let d = 0; d < 256; d++) {
+      const i = flip ? 255 - d : d, r = i >> 4, c = i & 15, raw = g.board[i], wall = !!(raw && raw.wall), p = wall ? null : raw, light = ((r + c) % 2) === 0;
       let shadow = '';
       if (wall) {
         const op = (rr, cc) => rr >= 0 && rr < 16 && cc >= 0 && cc < 16 && !(g.board[rr * 16 + cc] && g.board[rr * 16 + cc].wall);
@@ -3043,20 +3114,20 @@ class Component extends DCLogic {
       let pcStyle = '', pcCls = '', v = { pd: '', fill: '', edge: '' };
       const ptype = p ? (p.body ? PO[p.body] : 'pawn') : '';
       if (p) {
-        v = this.pview(p.c, pl, ptype); pcStyle = v.style;
+        v = this.pview(p.c, pl, ptype, flip); pcStyle = v.style;
         if (!p.body) pcCls = 'nobody';
         if (g.lastTo === i) {
-          if (g.lastFrom >= 0) { pcCls += ' slide'; pcStyle += ';--dx:' + ((g.lastFrom & 15) - c) + ';--dy:' + ((g.lastFrom >> 4) - r); }
+          if (g.lastFrom >= 0) { pcCls += ' slide'; pcStyle += ';--dx:' + ((flip ? -1 : 1) * ((g.lastFrom & 15) - c)) + ';--dy:' + ((flip ? -1 : 1) * ((g.lastFrom >> 4) - r)); }
           else pcCls += ' fresh';
         }
       }
-      const fv = fi ? this.pview(fi.c, pl, fi.t) : { pd: '', fill: '', edge: '' };
+      const fv = fi ? this.pview(fi.c, pl, fi.t, flip) : { pd: '', fill: '', edge: '' };
       const lbl = Component.sq(i) + ', ' + (p ? (p.c === 'w' ? 'white ' : 'black ') + (p.body ? PN[ptype] + ' (' + NM[p.body] + ')' : 'pawn head only') + (Component.attrsOf(p).length ? ' with ' + Component.attrsOf(p).map(function (a) { return NM[a]; }).join(', ') : '') : 'empty') + (hint === 'h-cap' ? ', capture' : hint === 'h-dot' ? ', move here' : hint === 'h-place' ? ', place Pawn head here' : hint === 'h-att' ? ', give card' : '');
       cells.push({
         bg: wall ? '#16151a' : (light ? bl.light : bl.dark), cls: (tutStep && tutStep.piece && p && p.c === 'w' && p.body === tutStep.piece && g.selected !== i ? 'coachsq ' : '') + ((g.selected === i || (g.chain && g.chain.sq === i) || (g.haste && g.haste.sq === i)) ? 'sel' : '') + (wall ? ' wallc' : ''), hint: hint, hasHint: !!hint,
         wall: wall, shadow: shadow,
         last: g.lastFrom === i || g.lastTo === i,
-        hasRank: c === 0 && !wall, hasFile: r === 15 && !wall, rank: String(16 - r), file: 'abcdefghijklmnop'[c], coordColor: light ? bl.dark : bl.light,
+        hasRank: c === (flip ? 15 : 0) && !wall, hasFile: r === (flip ? 0 : 15) && !wall, rank: String(16 - r), file: 'abcdefghijklmnop'[c], coordColor: light ? bl.dark : bl.light,
         piece: !!p, pcCls: pcCls, pcStyle: pcStyle, pd: v.pd, fill: v.fill, edge: v.edge, pips: Component.attrsOf(p), hasPips: !!(p && Component.attrsOf(p).length), shielded: !!(p && p.shield),
         fx: !!fi, fxAnim: s.fx ? s.fx.anim : 'fade', fxDelay: fi ? fi.delay + 's' : '0s', fxD: (fi && fi.nog) ? '' : fv.pd, fxFill: fv.fill, fxEdge: fv.edge,
         label: wall ? (hint === 'h-brk' ? 'Rock wall, a Marcher can break through' : 'Rock wall') : lbl, click: () => this.clickCell(i),
@@ -3093,7 +3164,7 @@ class Component extends DCLogic {
     vals.dzOver = (e) => this.dzOver(e); vals.dzDrop = (e) => this.dzDrop(e); vals.discardSel = () => this.discardSel();
     vals.capText = online ? 'You ' + g.caps[viewer] + '  |  ' + oppNm + ' ' + g.caps[opp] : (g.mode === 'bot' ? 'You ' : 'White ') + g.caps[g.mode === 'bot' ? g.human : 'w'] + '  |  ' + (g.mode === 'bot' ? 'Bot ' : 'Black ') + g.caps[g.mode === 'bot' ? opp : 'b'];
 
-    vals.turnDot = g.turn; vals.chaining = busy && humanTurn;
+    vals.turnDot = g.turn; vals.chaining = busy && humanTurn; vals.sideCls = g.tut ? 'tutdock' : '';
     vals.showBan = !g.over && !busy && (!g.tut || ((g.turnNo || 0) > 0 && !g.tut.done));
     vals.banCls = 'turnban ' + ((g.turnNo || 0) % 2 ? 'banA' : 'banB');
     vals.banText = g.tut ? 'Dummy passes · your turn' : online ? (g.turn === g.human ? 'Your turn' : oppNm + '\'s turn') : g.mode === 'bot' ? (g.turn === g.human ? 'Your turn' : 'Bot\'s turn') : nm(g.turn) + '\'s turn';
