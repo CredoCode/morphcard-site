@@ -907,6 +907,44 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
 .deck .tile .card,.tiles .tile>.card{cursor:zoom-in}
 @media (max-width:760px){.zoomcard .card{zoom:2}.zinfo{font-size:13px}}
 @media (max-height:640px){.zoomcard .card{zoom:1.7}}
+
+/* ===== Subcategory frames sit outside the 5x5 diagram (2026-10-27): the grid keeps its size and reads as 5x5 ===== */
+.card.sub-assault .art .dg,.card.sub-guard .art .dg,.card.sub-retaliate .art .dg,.card.sub-mobility .art .dg{width:56px;border:0;border-image:none;overflow:visible;border-radius:2px;box-shadow:0 0 0 1px #2a2118}
+.card.sub-assault .art,.card.sub-guard .art,.card.sub-retaliate .art,.card.sub-mobility .art{padding-top:9px;padding-bottom:9px}
+.card.sub-assault .art .dg::before,.card.sub-guard .art .dg::before,.card.sub-retaliate .art .dg::before,.card.sub-mobility .art .dg::before{content:"";position:absolute;inset:-7px;pointer-events:none;border-radius:3px;z-index:2}
+.card.sub-assault .art .dg::before{border:3px solid #f4ecdc}
+.card.sub-guard .art .dg::before{border:5px double #f4ecdc}
+.card.sub-retaliate .art .dg::before{border:3px dotted #f4ecdc}
+.card.sub-mobility .art .dg::before{border:5px solid transparent;border-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30'%3E%3Cpath fill='none' stroke='%23f4ecdc' stroke-width='2.6' d='M0 5Q2.5 1 5 5T10 5T15 5T20 5T25 5T30 5M0 25Q2.5 21 5 25T10 25T15 25T20 25T25 25T30 25M5 0Q1 2.5 5 5T5 10T5 15T5 20T5 25T5 30M25 0Q21 2.5 25 5T25 10T25 15T25 20T25 25T25 30'/%3E%3C/svg%3E") 10 round}
+
+/* ===== Large card view: the whole card next to a full explanation (2026-10-27) ===== */
+.zoomwrap{flex-direction:row;align-items:center;gap:26px;max-width:min(94vw,860px);max-height:94vh;overflow:auto;text-align:left}
+.zoomcard .card{zoom:2.2}
+.zinfo{max-width:400px;gap:8px;padding:16px 18px;font-size:15px}
+.zinfo .zkind{font:700 11px/1 'Hanken Grotesk',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#c8a96a}
+.zinfo .ztitle{margin:0;font-size:30px;letter-spacing:.06em;text-transform:uppercase;color:#f4ecdc}
+.zinfo .zlong{margin:0;color:#f4ecdc;font-size:15.5px;line-height:1.5}
+.zinfo .zfacts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px;font-size:13.5px;color:#cfc7b4}
+.zinfo .zfacts li{padding-left:16px;position:relative}
+.zinfo .zfacts li::before{content:"";position:absolute;left:2px;top:.55em;width:6px;height:6px;background:#c8a96a;transform:rotate(45deg)}
+@media (max-height:700px) and (min-width:761px){.zoomcard .card{zoom:1.8}}
+@media (max-width:760px){
+  .zoomwrap{flex-direction:column;gap:12px;max-height:94dvh;text-align:left}
+  .zoomcard .card{zoom:1.45}
+  .zinfo{max-width:none;padding:12px 14px}
+  .zinfo .ztitle{font-size:22px}
+  .zinfo .zlong{font-size:14px}
+  .zinfo .zfacts{font-size:12.5px}
+
+  /* whole cards in the hand on phones: no description or footer, a bigger image (the large view has the full text) */
+  .app:has(.game) .game:not(.handmini) .hand .card{height:auto}
+  .app:has(.game) .game:not(.handmini) .hand .card .cf{height:auto}
+  .app:has(.game) .game:not(.handmini) .hand .card small,.app:has(.game) .game:not(.handmini) .hand .card .cfoot{display:none}
+  .app:has(.game) .game:not(.handmini) .hand .card .art{padding-top:10px;padding-bottom:10px;margin-bottom:3px}
+  .app:has(.game) .game:not(.handmini) .hand .card .art .dg{width:86px}
+  .app:has(.game) .game:not(.handmini) .hand .card.sub-assault .art .dg,.app:has(.game) .game:not(.handmini) .hand .card.sub-guard .art .dg,.app:has(.game) .game:not(.handmini) .hand .card.sub-retaliate .art .dg,.app:has(.game) .game:not(.handmini) .hand .card.sub-mobility .art .dg{width:78px}
+  .app:has(.game) .game:not(.handmini) .hand .card.sub-assault .art,.app:has(.game) .game:not(.handmini) .hand .card.sub-guard .art,.app:has(.game) .game:not(.handmini) .hand .card.sub-retaliate .art,.app:has(.game) .game:not(.handmini) .hand .card.sub-mobility .art{padding-top:14px;padding-bottom:14px}
+}
 </style>
 <style>html,body{margin:0;min-height:100%;background:#0b0a0e}#app{min-height:100vh;min-height:100dvh}</style>
 </head>
@@ -1417,8 +1455,13 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
   <div class="modal zoomcard" onClick="{{closeZoom}}">
     <div class="zoomwrap" role="dialog" aria-modal="true" aria-label="{{zc.title}}">
       <div class="{{zc.cls}}"><span class="cf"><span class="ctop"><span class="ctx"><em class="cat">{{zc.cat}}</em><span class="ctt">{{zc.title}}</span></span><i class="gem" title="{{zc.rname}}"></i></span><span class="art"><template data-sc-if value="{{zc.once}}" hint-placeholder-val="{{ false }}"><span class="once" title="One use: spent after it triggers"><b>1&#215;</b>One use</span></template><span class="dg"><template data-sc-for list="{{zc.dg}}" as="d" hint-placeholder-count="25"><i class="{{d}}"></i></template><svg class="dgp" viewBox="0 0 100 100"><path d="{{zc.pd}}" fill="#fffaf0" stroke="#2a2118" stroke-width="7" stroke-linejoin="round" style="paint-order:stroke"></path></svg></span></span><small>{{zc.sub}}</small><span class="cfoot"><span>{{zc.no}}</span><span class="micro">MORPHCARD &#183; OFFICIAL</span><span>{{zc.rl}}</span></span></span></div>
-      <div class="zinfo"><b>{{zc.kindLine}}</b><span>{{zc.detail}}</span></div>
-      <p class="muted small">Tap or click anywhere to close</p>
+      <div class="zinfo">
+        <b class="zkind">{{zc.kindLine}}</b>
+        <h2 class="ztitle">{{zc.title}}</h2>
+        <p class="zlong">{{zc.long}}</p>
+        <ul class="zfacts"><template data-sc-for list="{{zc.facts}}" as="f" hint-placeholder-count="3"><li>{{f.t}}</li></template></ul>
+        <p class="muted small">Tap or click anywhere to close</p>
+      </div>
     </div>
   </div>
 </template>
@@ -2553,6 +2596,44 @@ class Component extends DCLogic {
   static TUT_REWARD = 100;
   /* a win against the bot in Pass & Play; losses pay nothing and it never changes rating */
   static BOT_WIN_COINS = 5;
+  /* the large card view's full explanation of each card */
+  static DETAIL = {
+    pawn: 'The start of every piece. Place it on an empty square in your first two rows. A bare head can\'t move until you give it a movement card.',
+    knight: 'Turns a Pawn head into a Leaper. It jumps in an L, two squares one way and one to the side, over pieces and rock, but never lands on rock. It captures by landing on an enemy.',
+    bishop: 'Turns a Pawn head into a Glider. It slides any distance diagonally until something blocks it, and captures the first enemy in its path.',
+    rook: 'Turns a Pawn head into a Runner. It slides any distance up, down, left or right until something blocks it, and captures the first enemy in its path.',
+    queen: 'Turns a Pawn head into a Nova. It slides any distance in all eight directions until something blocks it, and captures the first enemy in its path.',
+    king: 'Turns a Pawn head into a Walker. It steps one square up, down, left or right (no diagonals) and captures by stepping onto an enemy.',
+    march: 'Turns a Pawn head into a Marcher. It steps one square forward and captures one square diagonally forward. A Marcher on the far row wins the match, but it can never step onto a far-row square an enemy could capture.',
+    sidestep: 'Turns a Pawn head into a Crab. It slides one or two squares left or right and captures the first enemy it reaches.',
+    skip: 'Turns a Pawn head into a Skipper. It steps one square diagonally in any direction and captures by stepping onto an enemy.',
+    lance: 'Turns a Pawn head into a Lancer. It slides forward any distance, never sideways or back, and captures the first enemy in its path.',
+    hop: 'Turns a Pawn head into a Hopper. It jumps exactly two squares in a straight line, over pieces and rock, landing on an empty square or an enemy.',
+    longl: 'Turns a Pawn head into a Camel. It jumps three squares one way and one to the side, over anything in between, landing on an empty square or an enemy.',
+    shift: 'Turns a Pawn head into a Courier. It steps one square in any direction, or swaps places with a friendly piece next to it. It can\'t capture, and a swap never puts a Marcher on its far row.',
+    ricochet: 'Turns a Pawn head into a Bouncer. It slides up to four squares diagonally and may bounce once off rock or the board edge, capturing the first enemy it reaches.',
+    burrow: 'Turns a Pawn head into a Mole. It steps one square up, down, left or right and can dig into rock, turning it into open floor. It can\'t capture.',
+    sovereign: 'Turns a Pawn head into a Sovereign. It slides up to two squares in any direction, or jumps in an L like a Leaper.',
+    phase: 'Turns a Pawn head into a Phantom. It glides up to five squares in a straight line, passing through rock and pieces, and must land on an empty square. It can\'t capture.',
+    chk: 'After this piece captures, you may make one more capture with it on a square diagonally next to where it landed, or press Finish turn. Two captures at most in a turn.',
+    wb: 'Marcher only. The Marcher may step forward into rock (not diagonally), and that rock becomes open floor for the rest of the match.',
+    nuke: 'After this piece captures, it detonates: every piece in the eight surrounding squares, friend or foe, is destroyed, and the rock around it opens up. Enemies destroyed count as captures.',
+    shield: 'Blocks the first capture against this piece: the attacker stays where it was and its turn ends. It also absorbs a Nuclear blast. Then the Shield breaks.',
+    rally: 'Your bare Pawn heads next to this piece may step one square forward as their move, without capturing.',
+    anchor: 'This piece is immune to Lightning, Nuclear blasts and Courier swaps, but it can only ever move one square at a time.',
+    haste: 'After this piece makes a move that doesn\'t capture, it may move again straight away, without capturing, swapping or ending on the far row. It is only spent if you use the extra move.',
+    mirror: 'If an enemy captures this piece, the capturer loses its movement card and becomes a bare Pawn head.',
+    homeward: 'As its move, this piece returns to any empty square in your first two rows.',
+    devour: 'When this piece captures, it takes the captured piece\'s attributes, as many as it has room for (three at most).',
+    blink: 'As its move, this piece jumps to any empty square within three squares, ignoring rock, but never onto the far row.',
+    wind: 'The first time this piece would be captured, it returns to your hand as cards (its head, movement card and other attributes) instead of dying. The attacker still moves in.',
+    martyr: 'If an enemy captures this piece, the capturer is destroyed too, and the enemy pieces next to it lose their attributes.',
+    zap: 'Strike any piece on the board, yours or your opponent\'s. It becomes a bare Pawn head again, losing its movement card and attributes. Anchored pieces resist it.',
+    cavein: 'Turn one empty square in rows 2 to 13 into rock. It can never seal off the only path between the two home rows.',
+    snare: 'Pick an enemy piece with a movement card. It can\'t move during its owner\'s next turn. After that it is safe from another Snare until it has had a turn to move.',
+    recall: 'Bring back your most recently lost piece that had a movement card. It returns to an empty square in your first two rows with its movement card but no attributes. A piece can be recalled only once.',
+    transpose: 'Swap two of your own pieces anywhere on the board. Anchored and snared pieces can\'t be swapped, and a Marcher or Lancer never ends closer to its far row.'
+  };
   static TUTORIAL = [
     {
       title: 'Heads and bodies', text: 'Every piece starts as a Pawn head: an orb that cannot move. A movement card gives it a body. Each turn you do exactly one thing: move a piece, play one card, or discard one card.',
@@ -2700,7 +2781,19 @@ class Component extends DCLogic {
       : kind === 'Attribute' ? sub.name + ': ' + sub.blurb + ' A piece holds up to ' + Component.ATTR_MAX + ' attributes.' + (Component.ONE_USE[type] ? ' One use: spent after it triggers.' : '')
       : kind === 'Action' ? 'Played from your hand for an instant effect, then gone. Playing it uses your turn.'
       : 'Place it on your first two rows, then give it a movement card. Up to ' + Component.PIECE_MAX + ' in a deck.';
-    return Object.assign({}, v, { kindLine: kind + ' · ' + rar, detail: detail });
+    const facts = [];
+    if (kind === 'Movement') facts.push('Becomes a ' + Component.PIECE_NAME[Component.PIECE_OF[type]] + '. A piece takes one movement card.');
+    if (kind === 'Attribute') {
+      facts.push(sub.name + ' attribute: ' + sub.blurb);
+      if (Component.ONE_USE[type]) facts.push('One use: spent after it triggers.');
+      if (Component.NEEDS_BODY[type]) facts.push('Needs a piece that already has a movement card.');
+      facts.push('A piece holds up to ' + Component.ATTR_MAX + ' attributes.');
+    }
+    if (kind === 'Action') facts.push('Playing it uses your whole turn, then it goes to your discard pile.');
+    if (kind === 'Piece') facts.push('Up to ' + Component.PIECE_MAX + ' in a deck.');
+    const s = this.state;
+    facts.push('In your deck: ' + ((s.deck && s.deck[type]) || 0) + ' · In your collection: ' + ((s.collection && s.collection[type]) || 0));
+    return Object.assign({}, v, { kindLine: kind + ' · ' + rar, detail: detail, long: Component.DETAIL[type] || v.sub, facts: facts.map(function (f) { return { t: f }; }) });
   }
   clickCard(idx) {
     const g = this.state.game;
