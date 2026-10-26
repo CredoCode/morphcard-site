@@ -833,33 +833,59 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
 }
 .touch-ghost{box-shadow:0 12px 28px rgba(0,0,0,.6)}
 
-/* ===== Phones v2: name tabs and a smaller lesson box (2026-10-27) ===== */
+/* ===== Phones: lock the page during a match (2026-10-27). On a real phone 100vh is the height with the browser
+   toolbars hidden, so a 100vh page is taller than the screen and scrolls. The match screen is pinned to the visible
+   screen instead, and the page under it can't scroll, bounce or pull to refresh. ===== */
 @media (max-width:760px){
-  .app:has(.game) .game .hand{zoom:1;align-items:center;padding:6px 2px 4px;gap:6px}
-  .app:has(.game) .game .hand .card{width:auto;max-width:160px;height:auto;padding:2px;border-radius:6px;flex:none;animation:none}
-  .app:has(.game) .game .hand .card .cf{height:auto;border-radius:4px}
-  .app:has(.game) .game .hand .card .art,.app:has(.game) .game .hand .card small,.app:has(.game) .game .hand .card .cfoot{display:none}
-  .app:has(.game) .game .hand .card .ctop{margin:0;padding:3px 6px;gap:4px;border-radius:3px}
-  .app:has(.game) .game .hand .card .ctt{font-size:11.5px;line-height:1.15;letter-spacing:0}
-  .app:has(.game) .game .hand .card .cat{font-size:6.5px}
-  .app:has(.game) .game .hand .card .gem{display:none}
-  /* every card stays visible: the name tabs wrap onto as many lines as they need, and the Discard button flows in after them */
-  .app:has(.game) .game .handrow{display:flex;flex-wrap:wrap;gap:4px;align-items:center;justify-content:flex-start;padding:4px 0 2px}
-  .app:has(.game) .game .hand .card{padding:1.5px;border-radius:5px}
+  html:has(.app .game),html:has(.app .game) body{height:100%;overflow:hidden;overscroll-behavior:none}
+  html:has(.app .game) #app{min-height:0}
+  .app:has(.game){position:fixed;inset:0;height:auto;min-height:0;overscroll-behavior:none}
+  .app:has(.game) .game{touch-action:manipulation}
+  .app:has(.game) .game .coachside{overscroll-behavior:contain}
+}
+
+/* ===== Hand view: whole cards (default) or names only, toggled by the "_" button (2026-10-27) ===== */
+.handpanel{position:relative}
+.handmin{position:absolute;top:6px;right:8px;z-index:3;width:24px;height:22px;display:grid;place-items:center;padding:0 0 4px;border:1px solid #3a3426;border-radius:3px;background:#0d0c10;color:#c8a96a;font:700 15px/1 'Hanken Grotesk',sans-serif;cursor:pointer}
+.handmin:hover{border-color:#c8a96a;color:#f4ecdc}
+.handmin[aria-pressed="true"]{padding:0;font-size:14px}
+/* names only: each card shows just its title band, in its kind colour */
+.game.handmini .hand{flex-wrap:wrap;align-items:center;zoom:1;padding-top:8px}
+.game.handmini .hand .card{width:auto;max-width:170px;height:auto;padding:1.5px;border-radius:5px;flex:none;animation:none}
+.game.handmini .hand .card .cf{height:auto;border-radius:4px}
+.game.handmini .hand .card .art,.game.handmini .hand .card small,.game.handmini .hand .card .cfoot,.game.handmini .hand .card .cat,.game.handmini .hand .card .gem{display:none}
+.game.handmini .hand .card .ctop{margin:0;padding:4px 8px;gap:4px;border-radius:3px}
+.game.handmini .hand .card .ctt{font-size:13px;line-height:1.15;letter-spacing:0}
+.game.handmini .hand .card:hover:not(:disabled){transform:translateY(-2px)}
+.game.handmini .hand .card.sel{transform:translateY(-3px)}
+.game.handmini .hand .card.coachc{animation:none}
+.game.handmini .hand .card.used{width:auto;height:auto;min-height:0;padding:6px 12px}
+.game.handmini .handrow .discard-row{flex:0 0 auto;flex-direction:row;align-items:center;padding-top:8px}
+.game.handmini .handrow .dz{flex:none;font-size:0;padding:6px 10px}
+.game.handmini .handrow .dz::after{content:"Drop here to discard";font-size:11px}
+
+/* ===== Phones: the hand (both views) and a smaller lesson box ===== */
+@media (max-width:760px){
+  /* every card stays visible: cards wrap onto as many lines as they need, and the Discard button flows in after them
+     (it is also where you drop a card to discard it) */
+  .app:has(.game) .game .handrow{display:flex;flex-wrap:wrap;gap:4px;align-items:center;justify-content:flex-start;padding:4px 24px 2px 0}
   .app:has(.game) .game .hand,.app:has(.game) .game .handrow .discard-row{display:contents}
-  .app:has(.game) .game .hand .card{touch-action:none}
-  .app:has(.game) .game .hand .card .cat{display:none}
+  /* zoom still applies through a display:contents box, so reset the older half-size row zoom; cards are sized below */
+  .app:has(.game) .game .hand{zoom:1}
+  .app:has(.game) .game .hand .card{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;animation:none}
   .app:has(.game) .game .hand .card:hover:not(:disabled){transform:none}
-  .app:has(.game) .game .hand .card.sel{transform:translateY(-3px)}
-  .app:has(.game) .game .hand .card.coachc{animation:none}
-  .app:has(.game) .game .hand .card.used{min-width:0;padding:6px 10px;font-size:12px}
-  .app:has(.game) .game .handrow{align-items:center}
+  .app:has(.game) .game .hand .card.used{width:auto;height:auto;min-height:0;padding:6px 10px;font-size:12px}
   .app:has(.game) .gbottom .handpanel{padding:2px 6px 4px}
-  /* the Discard button is also where you drop a card to discard it */
-  .app:has(.game) .game .handrow .discard-row{flex:0 0 auto;flex-direction:row;padding-top:0}
   .app:has(.game) .game .handrow .dz{display:none}
-  .app:has(.game) .game .handrow .discard-row .btn{font-size:0;padding:4px 9px;min-height:0;align-self:stretch}
-  .app:has(.game) .game .handrow .discard-row .btn::after{content:"Discard";font-size:9.5px;letter-spacing:.08em}
+  .app:has(.game) .game .handrow .discard-row .btn{font-size:0;padding:4px 7px;min-height:0;align-self:stretch}
+  .app:has(.game) .game .handrow .discard-row .btn::after{content:"Discard";font-size:9px;letter-spacing:.06em}
+  .handmin{top:4px;right:4px;width:22px;height:20px}
+  /* whole cards (default): about half size, five to a row */
+  .app:has(.game) .game:not(.handmini) .hand .card{zoom:.46}
+  .app:has(.game) .game:not(.handmini) .hand .card.sel{transform:translateY(-8px)}
+  /* names only: compact tabs */
+  .app:has(.game) .game.handmini .hand .card .ctop{padding:3px 6px}
+  .app:has(.game) .game.handmini .hand .card .ctt{font-size:11.5px}
   /* smaller lesson box */
   .app:has(.game) .game .coachside{max-height:20vh;max-height:20dvh}
   .app:has(.game) .game .coachside>.panel{padding:6px 10px;gap:3px}
@@ -867,8 +893,22 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
   .app:has(.game) .game .coachside .coach h3{font-size:15px}
 }
 
+
+/* ===== Large card view (double-click a card) ===== */
+.hand .card.off{opacity:.6;filter:saturate(.5)}
+.hand .card.off:hover{transform:none}
+.zoomcard{z-index:60;cursor:zoom-out;background:rgba(6,5,8,.86)}
+.zoomwrap{display:flex;flex-direction:column;align-items:center;gap:12px;max-width:min(92vw,420px);text-align:center}
+.zoomcard .card{zoom:2.4;cursor:zoom-out;animation:none;transform:none}
+.zoomcard .card .ctt{white-space:normal;overflow:visible}
+.zoomcard .card small{display:block;-webkit-line-clamp:unset;overflow:visible}
+.zinfo{display:flex;flex-direction:column;gap:4px;padding:10px 14px;border:1px solid #3a3426;border-radius:4px;background:#0d0c10;color:#cfc7b4;font-size:14px;line-height:1.4}
+.zinfo b{font:700 11px/1 'Hanken Grotesk',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#c8a96a}
+.deck .tile .card,.tiles .tile>.card{cursor:zoom-in}
+@media (max-width:760px){.zoomcard .card{zoom:2}.zinfo{font-size:13px}}
+@media (max-height:640px){.zoomcard .card{zoom:1.7}}
 </style>
-<style>html,body{margin:0;min-height:100%;background:#0b0a0e}#app{min-height:100vh}</style>
+<style>html,body{margin:0;min-height:100%;background:#0b0a0e}#app{min-height:100vh;min-height:100dvh}</style>
 </head>
 <body>
 <div id="app"></div>
@@ -1046,7 +1086,7 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
   <div class="tiles">
     <template data-sc-for list="{{grp.tiles}}" as="t" hint-placeholder-count="4">
       <div class="tile {{t.tcls}}">
-        <div class="{{t.cls}}">
+        <div class="{{t.cls}}" title="Double-click to see it large" onClick="{{t.zoom}}">
           <span class="cf"><span class="ctop"><span class="ctx"><em class="cat">{{t.cat}}</em><span class="ctt">{{t.title}}</span></span><i class="gem" title="{{t.rname}}"></i></span><span class="art"><template data-sc-if value="{{t.once}}" hint-placeholder-val="{{ false }}"><span class="once" title="One use: spent after it triggers"><b>1&#215;</b>One use</span></template><span class="dg"><template data-sc-for list="{{t.dg}}" as="d" hint-placeholder-count="25"><i class="{{d}}"></i></template><svg class="dgp" viewBox="0 0 100 100"><path d="{{t.pd}}" fill="#fffaf0" stroke="#2a2118" stroke-width="7" stroke-linejoin="round" style="paint-order:stroke"></path></svg></span></span><small>{{t.sub}}</small><span class="cfoot"><span>{{t.no}}</span><span class="micro">MORPHCARD &#183; OFFICIAL</span><span>{{t.rl}}</span></span></span>
         </div>
         <div class="ctl">
@@ -1234,6 +1274,7 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
 
   <section class="gbottom" aria-label="Your hand">
     <div class="panel handpanel {{handCls}}" style="{{handStyle}}">
+    <button type="button" class="handmin" aria-pressed="{{handMini}}" aria-label="{{handMinLabel}}" title="{{handMinLabel}}" onClick="{{toggleHandMini}}">{{handMinIcon}}</button>
     <div class="hand-head"><h3>{{handTitle}}</h3><span class="muted">{{handSub}}</span></div>
     <div class="handrow">
     <div class="hand">
@@ -1368,6 +1409,16 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
         </template>
       </div>
       <div class="row"><button type="button" class="btn btn-p" onClick="{{closePack}}">Done</button><button type="button" class="btn btn-s" onClick="{{packToDeck}}">Edit deck</button></div>
+    </div>
+  </div>
+</template>
+
+<template data-sc-if value="{{showZoom}}" hint-placeholder-val="{{ false }}">
+  <div class="modal zoomcard" onClick="{{closeZoom}}">
+    <div class="zoomwrap" role="dialog" aria-modal="true" aria-label="{{zc.title}}">
+      <div class="{{zc.cls}}"><span class="cf"><span class="ctop"><span class="ctx"><em class="cat">{{zc.cat}}</em><span class="ctt">{{zc.title}}</span></span><i class="gem" title="{{zc.rname}}"></i></span><span class="art"><template data-sc-if value="{{zc.once}}" hint-placeholder-val="{{ false }}"><span class="once" title="One use: spent after it triggers"><b>1&#215;</b>One use</span></template><span class="dg"><template data-sc-for list="{{zc.dg}}" as="d" hint-placeholder-count="25"><i class="{{d}}"></i></template><svg class="dgp" viewBox="0 0 100 100"><path d="{{zc.pd}}" fill="#fffaf0" stroke="#2a2118" stroke-width="7" stroke-linejoin="round" style="paint-order:stroke"></path></svg></span></span><small>{{zc.sub}}</small><span class="cfoot"><span>{{zc.no}}</span><span class="micro">MORPHCARD &#183; OFFICIAL</span><span>{{zc.rl}}</span></span></span></div>
+      <div class="zinfo"><b>{{zc.kindLine}}</b><span>{{zc.detail}}</span></div>
+      <p class="muted small">Tap or click anywhere to close</p>
     </div>
   </div>
 </template>
@@ -1565,7 +1616,7 @@ class Component extends DCLogic {
     /* 17-or-older flag from the signed-in account (asked once at online sign-in): true shows Observation Post 7 promos */
     age17: null,
     /* acct: true while a signed-in account's server copy of Coins/cards/deck/cosmetics/stats is mirrored into state */
-    acct: false, showPick: false, lb: { scope: 'world', data: null },
+    acct: false, showPick: false, handMini: false, zoomCard: null, lb: { scope: 'world', data: null },
     /* online play: connection and account status (not saved; the sign-in session is kept by Supabase) */
     net: { phase: 'idle', email: '', code: '', name: '', age: null, editing: false, region: '', queue: false, friendCode: '', delArm: false, err: '', msg: '', busy: false, data: null, online: [], copied: false }
   };
@@ -1596,9 +1647,9 @@ class Component extends DCLogic {
     this._savedJson = null;
     this.setState(g);
   }
-  static SAVE_FIELDS = ['coins', 'collection', 'deck', 'owned', 'equipped', 'stats', 'tutDone', 'muted', 'shopTab', 'age17', 'guest', 'tutSeen'];
+  static SAVE_FIELDS = ['coins', 'collection', 'deck', 'owned', 'equipped', 'stats', 'tutDone', 'muted', 'shopTab', 'age17', 'guest', 'tutSeen', 'handMini'];
   /* device settings saved even while an account is signed in (the account's progress lives on the server) */
-  static DEVICE_FIELDS = ['muted', 'shopTab', 'tutSeen'];
+  static DEVICE_FIELDS = ['muted', 'shopTab', 'tutSeen', 'handMini'];
   static loadSave() {
     try {
       const raw = window.localStorage && window.localStorage.getItem(Component.SAVE_KEY);
@@ -2635,8 +2686,32 @@ class Component extends DCLogic {
     return g.placed[g.turn] ? '' : 'You need a pawn on the board first. Play a Pawn card.';
   }
 
+  dblTap(key) {
+    const now = Date.now(), last = this._tap;
+    this._tap = { k: key, t: now };
+    if (last && last.k === key && now - last.t < 420) { this._tap = null; return true; }
+    return false;
+  }
+  openZoom(type) { if (!type) return; this.sfx('card'); this.setState({ zoomCard: type }); }
+  zoomView(type) {
+    const v = this.cardView(type), sub = Component.subOf(type), rar = Component.RARITY_NAME[Component.rarity(type)];
+    const kind = type === 'pawn' ? 'Piece' : Component.ACTIONS.indexOf(type) >= 0 ? 'Action' : sub ? 'Attribute' : 'Movement';
+    const detail = kind === 'Movement' ? 'Turns a Pawn head into a ' + Component.PIECE_NAME[Component.PIECE_OF[type]] + '. A piece takes one movement card.'
+      : kind === 'Attribute' ? sub.name + ': ' + sub.blurb + ' A piece holds up to ' + Component.ATTR_MAX + ' attributes.' + (Component.ONE_USE[type] ? ' One use: spent after it triggers.' : '')
+      : kind === 'Action' ? 'Played from your hand for an instant effect, then gone. Playing it uses your turn.'
+      : 'Place it on your first two rows, then give it a movement card. Up to ' + Component.PIECE_MAX + ' in a deck.';
+    return Object.assign({}, v, { kindLine: kind + ' · ' + rar, detail: detail });
+  }
   clickCard(idx) {
-    const g = this.state.game; if (!this.canAct(g)) return;
+    const g = this.state.game;
+    /* double-click / double-tap: show the card large (works on the opponent's turn too) */
+    if (g && this.dblTap('h' + idx)) {
+      const viewer = g.mode === 'bot' || g.mode === 'online' ? g.human : g.turn;
+      this.openZoom(g.hands[viewer][idx]);
+      if (this.canAct(g) && !g.chain && !g.haste) this.setGame({ selCard: idx, selected: -1 });
+      return;
+    }
+    if (!this.canAct(g)) return;
     if (g.chain || g.haste) { this.setGame({ note: g.haste ? 'Finish your Haste move first: pick a square or press Finish turn.' : 'Finish your capture first: pick the next capture or press Finish turn.' }); return; }
     if (g.selCard === idx) { this.setGame({ selCard: -1, tp: -1 }); return; }
     const t = g.hands[g.turn][idx];
@@ -3204,6 +3279,7 @@ class Component extends DCLogic {
       rematch: () => { if (g && g.mode === 'online') { this.setState({ game: null }); go('online')(); this.netInit(); return; } this.startGame(g && g.mode !== 'tutorial' ? g.mode : 'bot'); },
       startTut: () => { this.sfx('click'); this.startTutorial(0); },
       showTutItem: !(s.tutDone || s.tutSeen), playLocalCls: 'mi' + (s.tutDone || s.tutSeen ? ' primary' : ''),
+      showZoom: !!s.zoomCard, zc: s.zoomCard ? this.zoomView(s.zoomCard) : this.zoomView('pawn'), closeZoom: () => this.setState({ zoomCard: null }),
       showPick: !!s.showPick, openPick: () => { this.sfx('click'); this.setState({ showPick: true }); }, closePick: () => this.setState({ showPick: false }),
       pickFriend: () => { this.sfx('click'); this.setState({ showPick: false }); this.startGame('local'); },
       pickBot: () => { this.sfx('click'); this.setState({ showPick: false }); this.startGame('bot'); },
@@ -3240,6 +3316,7 @@ class Component extends DCLogic {
       const v = this.cardView(t), owned = s.collection[t] || 0, inDeck = s.deck[t] || 0;
       const cap = t === 'pawn' ? Math.min(owned, Component.PIECE_MAX) : owned;
       return Object.assign({}, v, {
+        zoom: () => { if (this.dblTap('d' + t)) this.openZoom(t); },
         tcls: owned > 0 ? '' : 'locked', owned: owned, inDeck: inDeck, noDec: !s.acct || inDeck <= 0, noInc: !s.acct || inDeck >= cap || deckTotal >= Component.DECK_SIZE,
         dec: () => this.adjDeck(t, -1), inc: () => this.adjDeck(t, 1)
       });
@@ -3505,7 +3582,7 @@ class Component extends DCLogic {
       const v = this.cardView(type), sel = g.selCard === idx;
       const dim = humanTurn && !busy && !Component.targetsFor(g.board, g.turn, type, g).length;
       const coach = !!(tutStep && tutStep.card === type);
-      return Object.assign({}, v, { idx: idx, cls: v.cls + (sel ? ' sel' : '') + (dim && !coach ? ' dim' : '') + (coach ? ' coachc' : ''), selected: sel, disabled: !humanTurn || busy, label: NM[type] + ' card', click: () => this.clickCard(idx), draggable: humanTurn && !busy, dragStart: (e) => this.dragStart(e, idx), dragEnd: () => this.dragEnd() });
+      return Object.assign({}, v, { idx: idx, cls: v.cls + (sel ? ' sel' : '') + (dim && !coach ? ' dim' : '') + (coach ? ' coachc' : '') + (!humanTurn || busy ? ' off' : ''), selected: sel, disabled: false, label: NM[type] + ' card', click: () => this.clickCard(idx), draggable: humanTurn && !busy, dragStart: (e) => this.dragStart(e, idx), dragEnd: () => this.dragEnd() });
     });
     vals.handEmpty = g.hands[viewer].length === 0;
     vals.handCls = ''; vals.handStyle = '';
@@ -3521,7 +3598,9 @@ class Component extends DCLogic {
     vals.dzOver = (e) => this.dzOver(e); vals.dzDrop = (e) => this.dzDrop(e); vals.discardSel = () => this.discardSel();
     vals.capText = online ? 'You ' + g.caps[viewer] + '  |  ' + oppNm + ' ' + g.caps[opp] : (g.mode === 'bot' ? 'You ' : 'White ') + g.caps[g.mode === 'bot' ? g.human : 'w'] + '  |  ' + (g.mode === 'bot' ? 'Bot ' : 'Black ') + g.caps[g.mode === 'bot' ? opp : 'b'];
 
-    vals.turnDot = g.turn; vals.chaining = busy && humanTurn; vals.gameCls = (g.tut ? 'tut' : '') + (busy && humanTurn ? ' chaining' : '');
+    vals.turnDot = g.turn; vals.chaining = busy && humanTurn; vals.gameCls = (g.tut ? 'tut' : '') + (busy && humanTurn ? ' chaining' : '') + (s.handMini ? ' handmini' : '');
+    vals.handMini = !!s.handMini; vals.handMinIcon = s.handMini ? '\u25a1' : '_'; vals.handMinLabel = s.handMini ? 'Show whole cards' : 'Show card names only';
+    vals.toggleHandMini = () => { this.sfx('click'); this.setState({ handMini: !this.state.handMini }); };
     vals.showBan = !g.over && !busy && (!g.tut || ((g.turnNo || 0) > 0 && !g.tut.done));
     vals.banCls = 'turnban ' + ((g.turnNo || 0) % 2 ? 'banA' : 'banB');
     vals.banText = g.tut ? 'Dummy passes · your turn' : online ? (g.turn === g.human ? 'Your turn' : oppNm + '\'s turn') : g.mode === 'bot' ? (g.turn === g.human ? 'Your turn' : 'Bot\'s turn') : nm(g.turn) + '\'s turn';
