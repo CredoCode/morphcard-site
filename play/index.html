@@ -713,6 +713,11 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
   .game{grid-template-areas:"board" "hand" "side"}
   .game .gside .tpanel .hint-line{-webkit-line-clamp:3}
 }
+
+/* Snare: a dashed ring that turns slowly while the piece is held */
+.snring{position:absolute;inset:9%;border-radius:50%;border:2px dashed #e8774f;z-index:4;pointer-events:none;animation:snspin 7s linear infinite}
+@keyframes snspin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.snring{animation:none}}
 </style>
 <style>html,body{margin:0;min-height:100%;background:#0b0a0e}#app{min-height:100vh}</style>
 </head>
@@ -1038,6 +1043,7 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
           <template data-sc-if value="{{cell.hasFile}}" hint-placeholder-val="{{ false }}"><span class="coord f" style="color: {{cell.coordColor}}">{{cell.file}}</span></template>
           <template data-sc-if value="{{cell.piece}}" hint-placeholder-val="{{ false }}"><svg class="pcs {{cell.pcCls}}" viewBox="0 0 100 100" style="{{cell.pcStyle}}" aria-hidden="true"><path d="{{cell.pd}}" fill="{{cell.fill}}" stroke="{{cell.edge}}" stroke-width="6" stroke-linejoin="round" style="paint-order:stroke"></path></svg></template>
           <template data-sc-if value="{{cell.shielded}}" hint-placeholder-val="{{ false }}"><span class="shring"></span></template>
+          <template data-sc-if value="{{cell.snared}}" hint-placeholder-val="{{ false }}"><span class="snring"></span></template>
           <template data-sc-if value="{{cell.hasPips}}" hint-placeholder-val="{{ false }}"><span class="pips"><template data-sc-for list="{{cell.pips}}" as="pp" hint-placeholder-count="2"><i class="pip {{pp}}"></i></template></span></template>
           <template data-sc-if value="{{cell.hasHint}}" hint-placeholder-val="{{ false }}"><span class="h {{cell.hint}}"></span></template>
           <template data-sc-if value="{{cell.fx}}" hint-placeholder-val="{{ false }}">
@@ -1685,7 +1691,7 @@ class Component extends DCLogic {
     const g = this.state.game;
     if (this._acting || !g || g.turn !== g.human) return;
     this._acting = true;
-    this.sfx(a.type === 'move' ? (a.mv.caps.length ? 'capture' : 'move') : a.type === 'chain' || a.type === 'zap' ? 'capture' : a.type === 'place' ? 'place' : a.type === 'attach' ? 'card' : 'click');
+    this.sfx(a.type === 'move' ? (a.mv.caps.length ? 'capture' : 'move') : a.type === 'chain' || a.type === 'zap' ? 'capture' : a.type === 'place' ? 'place' : (a.type === 'attach' || Component.ACTIONS.indexOf(a.type) >= 0) ? 'card' : 'click');
     this.netPreview(g, a);
     try { this.netShowMatch(await this.netCall('act', { match: g.matchId, action: a }), g.matchId); }
     catch (e) { this.setGame({ note: (e && e.message) || 'Could not send the move.' }); try { await this.netLoadMatch(g.matchId); } catch (e2) { /* keep what we have */ } }
@@ -1717,7 +1723,9 @@ class Component extends DCLogic {
   static DECK_SIZE = 50;
   static DEFAULT_DECK = { pawn: 15, march: 8, king: 6, rook: 6, queen: 4, knight: 4, chk: 5, wb: 2 };
   static BODIES = ['knight', 'bishop', 'rook', 'queen', 'king', 'march', 'sidestep', 'skip', 'lance', 'hop', 'longl', 'shift', 'ricochet', 'burrow', 'sovereign', 'phase'];
-  static CARD_ORDER = ['pawn', 'knight', 'bishop', 'rook', 'queen', 'king', 'march', 'sidestep', 'skip', 'lance', 'hop', 'longl', 'shift', 'ricochet', 'burrow', 'sovereign', 'phase', 'chk', 'wb', 'nuke', 'shield', 'rally', 'anchor', 'haste', 'mirror', 'homeward', 'devour', 'blink', 'wind', 'martyr', 'zap'];
+  static CARD_ORDER = ['pawn', 'knight', 'bishop', 'rook', 'queen', 'king', 'march', 'sidestep', 'skip', 'lance', 'hop', 'longl', 'shift', 'ricochet', 'burrow', 'sovereign', 'phase', 'chk', 'wb', 'nuke', 'shield', 'rally', 'anchor', 'haste', 'mirror', 'homeward', 'devour', 'blink', 'wind', 'martyr', 'zap', 'cavein', 'snare', 'recall', 'transpose'];
+  /* Action cards: played from the hand for an instant effect, then gone. */
+  static ACTIONS = ['zap', 'cavein', 'snare', 'recall', 'transpose'];
   static ATTRS = ['chk', 'wb', 'nuke', 'shield', 'rally', 'anchor', 'haste', 'mirror', 'homeward', 'devour', 'blink', 'wind', 'martyr'];
   /* Attribute subcategories: each has its own border style on the card's diagram box, so a card's role reads at a glance.
      Guard and Retaliate are also the one-per-piece families (ATTR_FAMILY). */
@@ -1731,7 +1739,7 @@ class Component extends DCLogic {
   /* the cards a pack can hold; rarer cards drop less often (pickWeighted) */
   static packPool(p) {
     if (p.pool === 'movement') return Component.BODIES;
-    if (p.pool === 'action') return ['zap'];
+    if (p.pool === 'action') return Component.ACTIONS;
     const sub = p.pool.indexOf('attr:') === 0 ? p.pool.slice(5) : null;
     return sub ? Component.ATTRS.filter(function (t) { return Component.ATTR_SUB[t] === sub; }) : Component.ATTRS;
   }
@@ -1756,9 +1764,9 @@ class Component extends DCLogic {
   static cardsOf(p, skip) { return ['pawn'].concat(p.body ? [p.body] : []).concat(Component.attrsOf(p).filter(function (a) { return a !== skip; })); }
   static PIECE_OF = { knight: 'knight', bishop: 'bishop', rook: 'rook', queen: 'queen', king: 'king', march: 'march', sidestep: 'crab', skip: 'skipper', lance: 'lancer', hop: 'hopper', longl: 'camel', shift: 'courier', ricochet: 'bouncer', burrow: 'mole', sovereign: 'sovereign', phase: 'phantom' };
   static PIECE_NAME = { pawn: 'Pawn head', knight: 'Leaper', bishop: 'Glider', rook: 'Runner', queen: 'Nova', king: 'Walker', march: 'Marcher', crab: 'Crab', skipper: 'Skipper', lancer: 'Lancer', hopper: 'Hopper', camel: 'Camel', courier: 'Courier', bouncer: 'Bouncer', mole: 'Mole', sovereign: 'Sovereign', phantom: 'Phantom' };
-  static NAMES = { pawn: 'Pawn head', chk: 'Checker', wb: 'Wall Breaker', zap: 'Lightning', nuke: 'Nuclear', knight: 'L-Move', bishop: 'Diagonal', rook: 'Straight', queen: 'Omni', king: 'Orthogonal', march: 'March', sidestep: 'Sidestep', skip: 'Skip', lance: 'Lance', hop: 'Hop', longl: 'Long L', shift: 'Shift', ricochet: 'Ricochet', burrow: 'Burrow', sovereign: 'Sovereign', phase: 'Phase', shield: 'Shield', rally: 'Rally', anchor: 'Anchor', haste: 'Haste', mirror: 'Mirror', homeward: 'Homeward', devour: 'Devour', blink: 'Blink', wind: 'Second Wind', martyr: 'Martyr' };
+  static NAMES = { pawn: 'Pawn head', chk: 'Checker', wb: 'Wall Breaker', zap: 'Lightning', cavein: 'Cave-in', snare: 'Snare', recall: 'Recall', transpose: 'Transpose', nuke: 'Nuclear', knight: 'L-Move', bishop: 'Diagonal', rook: 'Straight', queen: 'Omni', king: 'Orthogonal', march: 'March', sidestep: 'Sidestep', skip: 'Skip', lance: 'Lance', hop: 'Hop', longl: 'Long L', shift: 'Shift', ricochet: 'Ricochet', burrow: 'Burrow', sovereign: 'Sovereign', phase: 'Phase', shield: 'Shield', rally: 'Rally', anchor: 'Anchor', haste: 'Haste', mirror: 'Mirror', homeward: 'Homeward', devour: 'Devour', blink: 'Blink', wind: 'Second Wind', martyr: 'Martyr' };
   /* Fixed rarity per card (no tiers or perks). Rarer = more unique, never strictly stronger than an existing card. */
-  static RARITY = { sidestep: 'C', skip: 'C', lance: 'C', hop: 'R', longl: 'R', shift: 'R', ricochet: 'E', burrow: 'E', sovereign: 'L', phase: 'L', haste: 'R', mirror: 'R', homeward: 'R', devour: 'E', blink: 'E', wind: 'L', martyr: 'L' };
+  static RARITY = { sidestep: 'C', skip: 'C', lance: 'C', hop: 'R', longl: 'R', shift: 'R', ricochet: 'E', burrow: 'E', sovereign: 'L', phase: 'L', haste: 'R', mirror: 'R', homeward: 'R', devour: 'E', blink: 'E', wind: 'L', martyr: 'L', cavein: 'C', snare: 'R', recall: 'E', transpose: 'L' };
   static RARITY_WEIGHT = { C: 10, R: 5, E: 2.5, L: 1 };
   static RARITY_NAME = { C: 'Common', R: 'Rare', E: 'Epic', L: 'Legendary' };
   static rarity(t) { return Component.RARITY[t] || 'C'; }
@@ -1778,6 +1786,10 @@ class Component extends DCLogic {
     march: 'M50 8 L78 42 H62 V80 H38 V42 H22 Z M24 86 H76 L82 92 H18 Z',
     marchd: 'M50 80 L22 46 H38 V10 H62 V46 H78 Z M24 86 H76 L82 92 H18 Z',
     bolt: 'M58 4 L22 54 H46 L38 96 L80 40 H56 Z',
+    cavein: 'M14 88 L24 58 L44 44 L66 50 L84 66 L88 88 Z M40 34 L46 20 L58 28 L52 38 Z M64 30 L70 18 L80 26 L74 36 Z',
+    snare: 'M10 62 L18 38 L26 54 L34 34 L42 54 L50 30 L58 54 L66 34 L74 54 L82 38 L90 62 Z M10 70 H90 L82 86 H18 Z',
+    recall: 'M66 92 V44 C66 30 56 22 44 22 H36 V8 L10 30 L36 52 V38 H44 C48 38 50 40 50 44 V92 Z',
+    transpose: 'M10 26 H60 V12 L88 32 L60 52 V38 H10 Z M90 74 H40 V88 L12 68 L40 48 V62 H90 Z',
     crab: 'M20 56 A30 18 0 1 1 80 56 A30 18 0 1 1 20 56 Z M6 30 L22 22 L30 40 L18 46 Z M94 30 L82 46 L70 40 L78 22 Z M40 72 H60 V86 H40 Z M24 86 H76 L82 92 H18 Z',
     skipper: 'M50 14 L76 40 L50 66 L24 40 Z M44 60 H56 V86 H44 Z M24 86 H76 L82 92 H18 Z',
     lancer: 'M50 4 L64 30 H56 V86 H44 V30 H36 Z M24 86 H76 L82 92 H18 Z',
@@ -1810,7 +1822,7 @@ class Component extends DCLogic {
     { id: 'guard', name: 'Guard Pack', price: 100, n: 2, pool: 'attr:guard', blurb: '2 Guard attributes: Shield, Anchor or Second Wind.' },
     { id: 'retaliate', name: 'Retaliate Pack', price: 100, n: 2, pool: 'attr:retaliate', blurb: '2 Retaliate attributes: Mirror or Martyr.' },
     { id: 'mobility', name: 'Mobility Pack', price: 100, n: 2, pool: 'attr:mobility', blurb: '2 Mobility attributes: Wall Breaker, Rally, Haste, Homeward or Blink.' },
-    { id: 'action', name: 'Action Pack', price: 150, n: 2, pool: 'action', blurb: '2 Lightning action cards.' }
+    { id: 'action', name: 'Action Pack', price: 150, n: 2, pool: 'action', blurb: '2 random action cards. Rare, Epic and Legendary cards drop less often.' }
   ];
   static DATA = {
     anims: [
@@ -2060,7 +2072,7 @@ class Component extends DCLogic {
         res = res.concat(ms);
       }
     }
-    return res;
+    return res.filter(function (m) { return !b[m.from].snared && !(m.swap && b[m.to] && b[m.to].snared); });
   }
   /* Haste follow-up: the piece moves again, without capturing, swapping or ending on the far row. */
   static hasteMoves(b, sq, color) {
@@ -2072,17 +2084,75 @@ class Component extends DCLogic {
     rows.forEach(function (r) { for (let c = 0; c < 16; c++) if (!b[r * 16 + c]) res.push(r * 16 + c); });
     return res;
   }
-  static targetsFor(b, color, t) {
+  static targetsFor(b, color, t, g) {
     if (t === 'pawn') return Component.placeSquares(b, color);
+    if (t === 'cavein') return Component.caveTargets(b);
+    if (t === 'snare') { const all = []; for (let i = 0; i < 256; i++) { const q = b[i]; if (q && !q.wall && q.c !== color && q.body && !q.snared && !q.snareProof) all.push(i); } return all; }
+    if (t === 'recall') return g && Component.recallBody(g, color) ? Component.placeSquares(b, color) : [];
+    if (t === 'transpose') { const all = []; for (let i = 0; i < 256; i++) if (Component.transposePartners(b, color, i).length) all.push(i); return all; }
     if (t === 'zap') { const all = []; for (let i = 0; i < 256; i++) if (b[i] && !b[i].wall && !b[i].anchor) all.push(i); return all; }
     const res = [], attr = Component.ATTRS.indexOf(t) >= 0;
     for (let i = 0; i < 256; i++) {
       const p = b[i]; if (!p || p.c !== color) continue;
-      if (attr ? Component.canTake(p, t) : !p.body) res.push(i);
+      /* a March card never goes to a head already standing on its far row: that would be a win without the Marcher safety check */
+      if (attr ? Component.canTake(p, t) : (!p.body && !(t === 'march' && (i >> 4) === (color === 'w' ? 0 : 15)))) res.push(i);
     }
     return res;
   }
-  static actType(t) { return t === 'pawn' ? 'place' : t === 'zap' ? 'zap' : 'attach'; }
+  static actType(t) { return t === 'pawn' ? 'place' : Component.ACTIONS.indexOf(t) >= 0 ? t : 'attach'; }
+  /* Cave-in: an empty square in rows 2-13 turns to rock, but only if a 4-connected path of open floor still links
+     the bottom row to the top row, so neither side is ever sealed off from the far row. */
+  static caveOpen(b) {
+    const seen = new Uint8Array(256), q = [];
+    for (let c = 0; c < 16; c++) { const i = 240 + c; if (!(b[i] && b[i].wall)) { seen[i] = 1; q.push(i); } }
+    while (q.length) {
+      const i = q.pop(), r = i >> 4, c = i & 15;
+      if (r === 0) return true;
+      [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]].forEach(function (n) {
+        if (n[0] < 0 || n[0] > 15 || n[1] < 0 || n[1] > 15) return;
+        const j = n[0] * 16 + n[1];
+        if (!seen[j] && !(b[j] && b[j].wall)) { seen[j] = 1; q.push(j); }
+      });
+    }
+    return false;
+  }
+  static caveTargets(b) {
+    const out = [];
+    for (let i = 32; i < 224; i++) {
+      if (b[i]) continue;
+      const nb = b.slice(); nb[i] = { wall: true };
+      if (Component.caveOpen(nb)) out.push(i);
+    }
+    return out;
+  }
+  /* Snare: the snared piece cannot move during its owner's next turn. At the end of that turn the snare becomes
+     snareProof, which stops it being snared again before it has had a turn to move. */
+  static clearSnares(board, color) {
+    if (!board.some(function (p) { return p && !p.wall && p.c === color && (p.snared || p.snareProof); })) return board;
+    return board.map(function (p) {
+      if (!p || p.wall || p.c !== color || !(p.snared || p.snareProof)) return p;
+      const q = Object.assign({}, p);
+      if (q.snareProof) delete q.snareProof;
+      if (q.snared) { delete q.snared; q.snareProof = true; }
+      return q;
+    });
+  }
+  /* Recall: each side's lost pieces that had a body (newest last); a piece that was already recalled is never listed again. */
+  static fallenOf(g, color) { return (g && g.fallen && g.fallen[color]) || []; }
+  static recallBody(g, color) { const f = Component.fallenOf(g, color); return f.length ? f[f.length - 1] : null; }
+  /* Transpose: two of your pieces swap squares. Anchored and snared pieces can't, and a Marcher or Lancer never ends closer to its far row. */
+  static transposeOk(b, color, a, z) {
+    if (a === z) return false;
+    const mine = function (x) { return x && !x.wall && x.c === color && !x.anchor && !x.snared; };
+    if (!mine(b[a]) || !mine(b[z])) return false;
+    const back = function (x, from, to) { return (x.body !== 'march' && x.body !== 'lance') || (color === 'w' ? (to >> 4) >= (from >> 4) : (to >> 4) <= (from >> 4)); };
+    return back(b[a], a, z) && back(b[z], z, a);
+  }
+  static transposePartners(b, color, sq) {
+    const out = []; if (!b[sq] || b[sq].wall || b[sq].c !== color) return out;
+    for (let i = 0; i < 256; i++) if (Component.transposeOk(b, color, sq, i)) out.push(i);
+    return out;
+  }
   /* Nuclear blast: every piece next to sq (friend or foe) is destroyed, rock next to sq becomes open floor, and the blast is spent. */
   static blast(board, sq, color) {
     const b = Component.clone(board), r = sq >> 4, c = sq & 15, victims = [], hits = [];
@@ -2117,6 +2187,7 @@ class Component extends DCLogic {
     if (!ap || !foe) return res;
     if (q.mirror) { delete ap.body; res.fired.push('mirror'); }
     if (q.martyr) {
+      res.attacker = Object.assign({}, ap);
       b[att] = null; res.fired.push('martyr'); res.attDied = att; res.attAt = -1;
       const r = vic >> 4, c = vic & 15;
       for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
@@ -2140,7 +2211,10 @@ class Component extends DCLogic {
     Component.legalMoves(g.board, color).forEach(function (mv) { out.push({ type: 'move', mv: mv }); });
     hand.forEach(function (t, hi) {
       if (seen[t]) return; seen[t] = 1;
-      Component.targetsFor(g.board, color, t).forEach(function (sq) { out.push({ type: Component.actType(t), card: t, sq: sq, hi: hi }); });
+      Component.targetsFor(g.board, color, t, g).forEach(function (sq) {
+        if (t === 'transpose') Component.transposePartners(g.board, color, sq).forEach(function (z) { if (z > sq) out.push({ type: 'transpose', card: t, sq: sq, sq2: z, hi: hi }); });
+        else out.push({ type: Component.actType(t), card: t, sq: sq, hi: hi });
+      });
     });
     if (hand.length) out.push({ type: 'discard', card: hand[0], hi: 0 });
     return out;
@@ -2215,6 +2289,12 @@ class Component extends DCLogic {
       } else if (a.type === 'zap') {
         const q = g.board[a.sq];
         sc += q.c === color ? -3 : (q.body ? 1.2 : -1) + Component.attrsOf(q).length * 0.6 + (q.body === 'march' ? 1 : 0);
+      } else if (a.type === 'cavein' || a.type === 'transpose') {
+        sc -= 1.5;
+      } else if (a.type === 'snare') {
+        sc += g.board[a.sq].body === 'march' ? 0.8 : -0.5;
+      } else if (a.type === 'recall') {
+        sc += 2.2 - Component.threats(g.board, a.sq, en) * 1.2;
       } else if (Component.ATTRS.indexOf(a.card) >= 0) {
         sc += 0.7 + ({ C: 0, R: 0.2, E: 0.3, L: 0.4 })[Component.rarity(a.card)];
         if (Component.ATTR_FAMILY[a.card] === 'guard') sc += Component.threats(g.board, a.sq, en) * 0.8 + (g.board[a.sq].body === 'march' ? 0.4 : 0);
@@ -2234,7 +2314,7 @@ class Component extends DCLogic {
       id: Date.now(), mode: mode, human: 'w', board: Component.newBoard(), turn: 'w',
       hands: { w: w.hand, b: b.hand }, decks: { w: w.deck, b: b.deck }, caps: { w: 0, b: 0 },
       placed: { w: false, b: false }, discards: { w: [], b: [] },
-      selected: -1, selCard: -1, chain: null, over: null, log: [], lastFrom: -1, lastTo: -1, note: ''
+      selected: -1, selCard: -1, chain: null, over: null, log: [], lastFrom: -1, lastTo: -1, note: '', fallen: { w: [], b: [] }, tp: -1
     };
   }
   startGame(mode) {
@@ -2315,7 +2395,7 @@ class Component extends DCLogic {
       hands: { w: L.hand.slice(), b: [] }, decks: { w: [], b: [] }, caps: { w: 0, b: 0 },
       placed: { w: true, b: true }, discards: { w: [], b: [] },
       selected: -1, selCard: -1, chain: null, over: null, log: ['Lesson ' + (k + 1) + ': ' + L.title], lastFrom: -1, lastTo: -1, note: '',
-      tut: { k: k, step: 0, done: false }
+      tut: { k: k, step: 0, done: false }, fallen: { w: [], b: [] }, tp: -1
     };
   }
   startTutorial(k) { this._tutAdvance = false; this.setState({ screen: 'game', game: this.newTutorial(k || 0), fx: null, showHow: false }); }
@@ -2338,8 +2418,15 @@ class Component extends DCLogic {
     }
     if (g.selCard >= 0) {
       const t = g.hands[color][g.selCard];
-      if (Component.targetsFor(g.board, color, t).indexOf(i) >= 0) this.perform({ type: Component.actType(t), card: t, sq: i, hi: g.selCard });
-      else this.setGame({ selCard: -1, note: '' });
+      if (t === 'transpose') {
+        /* two steps: the first piece, then the piece to swap with */
+        if (g.tp >= 0 && Component.transposePartners(g.board, color, g.tp).indexOf(i) >= 0) { this.perform({ type: 'transpose', card: t, sq: g.tp, sq2: i, hi: g.selCard }); return; }
+        if (i === g.tp) { this.setGame({ tp: -1, note: '' }); return; }
+        if (Component.targetsFor(g.board, color, t, g).indexOf(i) >= 0) { this.setGame({ tp: i, note: 'Now pick the piece to swap with.' }); return; }
+        this.setGame({ selCard: -1, tp: -1, note: '' }); return;
+      }
+      if (Component.targetsFor(g.board, color, t, g).indexOf(i) >= 0) this.perform({ type: Component.actType(t), card: t, sq: i, hi: g.selCard });
+      else this.setGame({ selCard: -1, tp: -1, note: '' });
       return;
     }
     if (g.selected >= 0) {
@@ -2355,6 +2442,10 @@ class Component extends DCLogic {
     if (t === 'pawn') return 'No open square in your first two rows.';
     if (t === 'wb') return 'Wall Breaker can only be placed on a Marcher.';
     if (t === 'zap') return 'There is no piece Lightning can strike. Anchored pieces resist it.';
+    if (t === 'cavein') return 'No square can fill with rock without cutting a side off from the far row.';
+    if (t === 'snare') return 'No enemy piece with a body can be snared. A piece just freed from a snare is safe for a turn.';
+    if (t === 'recall') return Component.recallBody(g, g.turn) ? 'Your first two rows are full.' : 'None of your pieces with a body has been lost yet.';
+    if (t === 'transpose') return 'You need two pieces that can swap. Anchored and snared pieces can\'t, and Marchers and Lancers never move forward.';
     if (Component.ATTRS.indexOf(t) >= 0) {
       const mine = g.board.filter(function (p) { return p && !p.wall && p.c === g.turn; }), nm = Component.NAMES[t], fam = Component.ATTR_FAMILY[t];
       if (!mine.length) return 'You need a pawn on the board first. Play a Pawn card.';
@@ -2368,9 +2459,9 @@ class Component extends DCLogic {
   clickCard(idx) {
     const g = this.state.game; if (!this.canAct(g)) return;
     if (g.chain || g.haste) { this.setGame({ note: g.haste ? 'Finish your Haste move first: pick a square or press Finish turn.' : 'Finish your capture first: pick the next capture or press Finish turn.' }); return; }
-    if (g.selCard === idx) { this.setGame({ selCard: -1 }); return; }
+    if (g.selCard === idx) { this.setGame({ selCard: -1, tp: -1 }); return; }
     const t = g.hands[g.turn][idx];
-    this.setGame({ selCard: idx, selected: -1, note: Component.targetsFor(g.board, g.turn, t).length ? '' : this.noTargetNote(g, t) });
+    this.setGame({ selCard: idx, selected: -1, tp: -1, note: Component.targetsFor(g.board, g.turn, t, g).length ? '' : this.noTargetNote(g, t) });
   }
 
   dragStart(e, idx) {
@@ -2396,14 +2487,15 @@ class Component extends DCLogic {
     const g = this.state.game, idx = this._dragIdx;
     if (idx == null || !this.canAct(g) || g.chain || g.haste) return;
     const t = g.hands[g.turn][idx];
-    if (t && Component.targetsFor(g.board, g.turn, t).indexOf(i) >= 0) { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'; }
+    if (t && Component.targetsFor(g.board, g.turn, t, g).indexOf(i) >= 0) { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'; }
   }
   dropCard(e, i) {
     const g = this.state.game, idx = this._dragIdx;
     if (idx == null || !this.canAct(g) || g.chain || g.haste) return;
     e.preventDefault();
     const t = g.hands[g.turn][idx]; this._dragIdx = null;
-    if (t && Component.targetsFor(g.board, g.turn, t).indexOf(i) >= 0) this.perform({ type: Component.actType(t), card: t, sq: i, hi: idx });
+    if (t === 'transpose' && Component.targetsFor(g.board, g.turn, t, g).indexOf(i) >= 0) { this.setGame({ selCard: idx, tp: i, selected: -1, note: 'Now pick the piece to swap with.' }); return; }
+    if (t && Component.targetsFor(g.board, g.turn, t, g).indexOf(i) >= 0) this.perform({ type: Component.actType(t), card: t, sq: i, hi: idx });
     else this.setGame({ selCard: -1 });
   }
   dzOver(e) { if (this._dragIdx != null && e.preventDefault) { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'; } }
@@ -2421,7 +2513,7 @@ class Component extends DCLogic {
   dragEnd() {
     this._dragIdx = null;
     const g = this.state.game;
-    if (g && !g.over && g.selCard >= 0) this.setGame({ selCard: -1 });
+    if (g && !g.over && g.selCard >= 0 && !(g.tp >= 0)) this.setGame({ selCard: -1 });
   }
 
   perform(a) {
@@ -2433,8 +2525,8 @@ class Component extends DCLogic {
       this._tutAdvance = true;
     }
     const color = g.turn, who = color === 'w' ? 'White' : 'Black', NM = Component.NAMES;
-    const ng = Object.assign({}, g, { selected: -1, selCard: -1, note: '' });
-    this.sfx(a.type === 'move' ? (a.mv.caps.length ? 'capture' : 'move') : a.type === 'hmove' ? 'move' : (a.type === 'chain' || a.type === 'zap') ? 'capture' : a.type === 'place' ? 'place' : a.type === 'attach' ? 'card' : 'click');
+    const ng = Object.assign({}, g, { selected: -1, selCard: -1, note: '', tp: -1 });
+    this.sfx(a.type === 'move' ? (a.mv.caps.length ? 'capture' : 'move') : a.type === 'hmove' ? 'move' : (a.type === 'chain' || a.type === 'zap') ? 'capture' : a.type === 'place' ? 'place' : (a.type === 'attach' || Component.ACTIONS.indexOf(a.type) >= 0) ? 'card' : 'click');
     const anim = (g.mode === 'bot' && color !== g.human) ? 'fade' : this.state.equipped.anim;
     const fxItem = (sq, piece, delay) => ({ sq: sq, c: piece.c, t: piece.body ? Component.PIECE_OF[piece.body] : 'pawn', delay: delay });
     let fx = null;
@@ -2521,6 +2613,23 @@ class Component extends DCLogic {
       fx = { id: Date.now(), anim: 'bolt', items: [{ sq: a.sq, c: old.c, t: old.body ? Component.PIECE_OF[old.body] : 'pawn', delay: 0 }] };
       b[a.sq] = { c: old.c };
       ng.log = g.log.concat([who + ' strikes ' + Component.sq(a.sq) + ' with Lightning. It is a bare Pawn head again']);
+    } else if (a.type === 'cavein') {
+      b[a.sq] = { wall: true };
+      fx = { id: Date.now(), anim: 'shatter', items: [{ sq: a.sq, c: color, t: 'pawn', delay: 0, nog: true }] };
+      ng.log = g.log.concat([who + ' brings the roof down: ' + Component.sq(a.sq) + ' is rock now']);
+    } else if (a.type === 'snare') {
+      b[a.sq] = Object.assign({}, b[a.sq], { snared: true });
+      ng.log = g.log.concat([who + ' snares the ' + Component.PIECE_NAME[Component.PIECE_OF[b[a.sq].body]] + ' at ' + Component.sq(a.sq) + '. It cannot move next turn']);
+    } else if (a.type === 'recall') {
+      const body = Component.recallBody(g, color), fl = Component.fallenOf(g, color).slice(0, -1);
+      b[a.sq] = { c: color, body: body, recalled: true };
+      ng.fallen = Object.assign({ w: [], b: [] }, g.fallen, { [color]: fl });
+      ng.placed = Object.assign({}, g.placed, { [color]: true });
+      ng.log = g.log.concat([who + ' recalls a ' + Component.PIECE_NAME[Component.PIECE_OF[body]] + ' to ' + Component.sq(a.sq)]);
+    } else if (a.type === 'transpose') {
+      const p1 = b[a.sq]; b[a.sq] = b[a.sq2]; b[a.sq2] = p1;
+      ng.lastFrom = a.sq; ng.lastTo = a.sq2;
+      ng.log = g.log.concat([who + ' transposes ' + Component.sq(a.sq) + ' and ' + Component.sq(a.sq2)]);
     } else {
       if (Component.ATTRS.indexOf(a.card) >= 0) b[a.sq][a.card] = true; else b[a.sq].body = a.card;
       ng.log = g.log.concat([who + ' gives ' + NM[a.card] + ' to ' + Component.sq(a.sq)]);
@@ -2546,6 +2655,9 @@ class Component extends DCLogic {
     const NM = Component.NAMES, at = Component.sq(res.vic), owner = res.victim.c === 'w' ? 'White' : 'Black';
     const log = ng.log.slice();
     if (res.blocked) { log.push('Shield at ' + at + ' blocks the capture and breaks'); ng.log = log; return; }
+    const lose = function (p) { if (p && p.body && !p.recalled) ng.fallen = Object.assign({ w: [], b: [] }, ng.fallen, { [p.c]: Component.fallenOf(ng, p.c).concat([p.body]) }); };
+    if (res.died) lose(res.victim);
+    if (res.attacker) lose(res.attacker);
     ng.caps = Object.assign({}, ng.caps, { [color]: ng.caps[color] + 1 });
     if (res.ret) {
       ng.hands = Object.assign({}, ng.hands, { [res.ret.c]: ng.hands[res.ret.c].concat(res.ret.cards) });
@@ -2570,6 +2682,7 @@ class Component extends DCLogic {
   endTurn(g) {
     const color = g.turn, en = Component.other(color);
     const n = Object.assign({}, g, { hands: { w: g.hands.w.slice(), b: g.hands.b.slice() }, decks: { w: g.decks.w.slice(), b: g.decks.b.slice() }, discards: { w: g.discards.w.slice(), b: g.discards.b.slice() }, log: g.log.slice(), chain: null, haste: null, turnNo: (g.turnNo || 0) + 1 });
+    n.board = Component.clearSnares(n.board, color);
     if (g.mode !== 'tutorial') this.refill(n, color);
     const goal = color === 'w' ? 0 : 15;
     for (let c = 0; c < 16; c++) { const p = n.board[goal * 16 + c]; if (p && p.c === color && p.body === 'march') { n.over = { winner: color, reason: 'breakthrough' }; return n; } }
@@ -2580,6 +2693,7 @@ class Component extends DCLogic {
     n.turn = en;
     if (Component.allActions(n).length === 0) {
       n.log.push((en === 'w' ? 'White' : 'Black') + ' has no legal action and passes');
+      n.board = Component.clearSnares(n.board, en);
       n.turn = color;
       if (Component.allActions(n).length === 0) {
         n.over = { winner: n.caps.w > n.caps.b ? 'w' : n.caps.b > n.caps.w ? 'b' : null, reason: 'stuck' };
@@ -2757,6 +2871,10 @@ class Component extends DCLogic {
       wb: (r, c) => (r === -1 && c === 0) ? 'wl' : '',
       nuke: (r, c) => (Math.abs(r) <= 1 && Math.abs(c) <= 1 && (r || c)) ? 'mv' : '',
       zap: () => '',
+      cavein: (r, c) => (!r && !c) ? 'wl' : '',
+      snare: (r, c) => (!r && !c) ? 'ck' : '',
+      recall: (r, c) => (r >= 1) ? 'mv' : '',
+      transpose: (r, c) => ((r === -1 && c === -1) || (r === 1 && c === 1)) ? 'mv' : '',
       pawn: () => '',
       sidestep: (r, c) => (r === 0 && c !== 0) ? 'mv' : '',
       skip: (r, c) => (Math.abs(r) === 1 && Math.abs(c) === 1) ? 'mv' : '',
@@ -2793,6 +2911,10 @@ class Component extends DCLogic {
       wb: ['card chk', 'WALL BREAKER', 'Marcher only. Marches into rock and opens it.', 'march'],
       nuke: ['card chk', 'NUCLEAR', 'After a capture, destroys all neighbours.', 'queen'],
       zap: ['card act', 'LIGHTNING', 'Strike any piece back to a bare Pawn head.', 'bolt'],
+      cavein: ['card act', 'CAVE-IN', 'An empty square becomes rock. Paths stay open.', 'cavein'],
+      snare: ['card act', 'SNARE', 'An enemy piece cannot move on its next turn.', 'snare'],
+      recall: ['card act', 'RECALL', 'Your last lost piece returns home, body only.', 'recall'],
+      transpose: ['card act', 'TRANSPOSE', 'Swap two of your pieces. Marchers never advance.', 'transpose'],
       sidestep: ['card body', 'SIDESTEP', 'Becomes a Crab. Slides 1-2 sideways.', 'crab'],
       skip: ['card body', 'SKIP', 'Becomes a Skipper. 1 step diagonally.', 'skipper'],
       lance: ['card body', 'LANCE', 'Becomes a Lancer. Slides forward only.', 'lancer'],
@@ -2815,7 +2937,7 @@ class Component extends DCLogic {
       martyr: ['card chk', 'MARTYR', 'Whoever captures it is destroyed, too.', 'martyr']
     }[type];
     const sub = Component.subOf(type);
-    const kind = type === 'pawn' ? 'PIECE' : type === 'zap' ? 'ACTION' : sub ? 'ATTRIBUTE' : 'MOVEMENT';
+    const kind = type === 'pawn' ? 'PIECE' : Component.ACTIONS.indexOf(type) >= 0 ? 'ACTION' : sub ? 'ATTRIBUTE' : 'MOVEMENT';
     const rar = Component.rarity(type);
     const cat = kind + (rar !== 'C' ? ' · ' + Component.RARITY_NAME[rar].toUpperCase() : '');
     return {
@@ -2908,7 +3030,7 @@ class Component extends DCLogic {
       const types = Component.ATTRS.filter(function (t) { return Component.ATTR_SUB[t] === sc.id; });
       return { name: 'Attributes · ' + sc.name, cls: 'sub-' + sc.id, types: types, note: sumOf(types) + ' in deck. ' + sc.look + ' ' + sc.blurb + ' Up to ' + Component.ATTR_MAX + ' attributes per piece.' };
     })).concat([
-      { name: 'Action cards', types: ['zap'], note: sumOf(['zap']) + ' in deck. Played once for an instant effect.' }
+      { name: 'Action cards', types: Component.ACTIONS, note: sumOf(Component.ACTIONS) + ' in deck. Played once for an instant effect.' }
     ]);
     vals.groups = kinds.map((k) => ({ name: k.name, gcls: k.cls || '', hasLeg: !!k.cls, note: k.note, tiles: k.types.filter(own).map(tileOf) })).filter((k) => k.tiles.length > 0);
     const lockedTypes = Component.CARD_ORDER.filter((t) => !own(t));
@@ -3091,7 +3213,8 @@ class Component extends DCLogic {
       else if (g.haste) Component.hasteMoves(g.board, g.haste.sq, g.turn).forEach(function (m) { moveT[m.to] = m; });
       else if (g.selCard >= 0) {
         const t = g.hands[g.turn][g.selCard];
-        Component.targetsFor(g.board, g.turn, t).forEach(function (i) { if (t === 'pawn') placeT[i] = 1; else attT[i] = 1; });
+        if (t === 'transpose' && g.tp >= 0) Component.transposePartners(g.board, g.turn, g.tp).forEach(function (i) { moveT[i] = { caps: [], swap: true }; });
+        else Component.targetsFor(g.board, g.turn, t, g).forEach(function (i) { if (t === 'pawn' || t === 'recall' || t === 'cavein') placeT[i] = 1; else attT[i] = 1; });
       } else if (g.selected >= 0) Component.legalMoves(g.board, g.turn).filter(function (m) { return m.from === g.selected; }).forEach(function (m) { moveT[m.to] = m; });
     }
     const cells = [], flip = g.mode === 'online' && g.human === 'b';
@@ -3124,13 +3247,13 @@ class Component extends DCLogic {
       const fv = fi ? this.pview(fi.c, pl, fi.t, flip) : { pd: '', fill: '', edge: '' };
       const lbl = Component.sq(i) + ', ' + (p ? (p.c === 'w' ? 'white ' : 'black ') + (p.body ? PN[ptype] + ' (' + NM[p.body] + ')' : 'pawn head only') + (Component.attrsOf(p).length ? ' with ' + Component.attrsOf(p).map(function (a) { return NM[a]; }).join(', ') : '') : 'empty') + (hint === 'h-cap' ? ', capture' : hint === 'h-dot' ? ', move here' : hint === 'h-place' ? ', place Pawn head here' : hint === 'h-att' ? ', give card' : '');
       cells.push({
-        bg: wall ? '#16151a' : (light ? bl.light : bl.dark), cls: (tutStep && tutStep.piece && p && p.c === 'w' && p.body === tutStep.piece && g.selected !== i ? 'coachsq ' : '') + ((g.selected === i || (g.chain && g.chain.sq === i) || (g.haste && g.haste.sq === i)) ? 'sel' : '') + (wall ? ' wallc' : ''), hint: hint, hasHint: !!hint,
+        bg: wall ? '#16151a' : (light ? bl.light : bl.dark), cls: (tutStep && tutStep.piece && p && p.c === 'w' && p.body === tutStep.piece && g.selected !== i ? 'coachsq ' : '') + ((g.selected === i || (g.chain && g.chain.sq === i) || (g.haste && g.haste.sq === i) || (g.selCard >= 0 && g.tp >= 0 && g.tp === i)) ? 'sel' : '') + (wall ? ' wallc' : ''), hint: hint, hasHint: !!hint,
         wall: wall, shadow: shadow,
         last: g.lastFrom === i || g.lastTo === i,
         hasRank: c === (flip ? 15 : 0) && !wall, hasFile: r === (flip ? 0 : 15) && !wall, rank: String(16 - r), file: 'abcdefghijklmnop'[c], coordColor: light ? bl.dark : bl.light,
-        piece: !!p, pcCls: pcCls, pcStyle: pcStyle, pd: v.pd, fill: v.fill, edge: v.edge, pips: Component.attrsOf(p), hasPips: !!(p && Component.attrsOf(p).length), shielded: !!(p && p.shield),
+        piece: !!p, pcCls: pcCls, pcStyle: pcStyle, pd: v.pd, fill: v.fill, edge: v.edge, pips: Component.attrsOf(p), hasPips: !!(p && Component.attrsOf(p).length), shielded: !!(p && p.shield), snared: !!(p && p.snared),
         fx: !!fi, fxAnim: s.fx ? s.fx.anim : 'fade', fxDelay: fi ? fi.delay + 's' : '0s', fxD: (fi && fi.nog) ? '' : fv.pd, fxFill: fv.fill, fxEdge: fv.edge,
-        label: wall ? (hint === 'h-brk' ? 'Rock wall, a Marcher can break through' : 'Rock wall') : lbl, click: () => this.clickCell(i),
+        label: wall ? (hint === 'h-brk' ? 'Rock wall, a Marcher can break through' : 'Rock wall') : lbl + (p && p.snared ? ', snared' : ''), click: () => this.clickCell(i),
         dragOver: (e) => this.dragOver(e, i), drop: (e) => this.dropCard(e, i)
       });
     }
@@ -3146,7 +3269,7 @@ class Component extends DCLogic {
     vals.handSub = g.tut ? 'A lesson hand. In a real match you hold ' + Component.HAND_MAX + ' cards and refill after each play.' : 'Draw pile: ' + g.decks[viewer].length + '. Discard: ' + g.discards[viewer].length + '. Refills to ' + Component.HAND_MAX + ' after you play a card.';
     vals.hand = g.hands[viewer].map((type, idx) => {
       const v = this.cardView(type), sel = g.selCard === idx;
-      const dim = humanTurn && !busy && !Component.targetsFor(g.board, g.turn, type).length;
+      const dim = humanTurn && !busy && !Component.targetsFor(g.board, g.turn, type, g).length;
       const coach = !!(tutStep && tutStep.card === type);
       return Object.assign({}, v, { cls: v.cls + (sel ? ' sel' : '') + (dim && !coach ? ' dim' : '') + (coach ? ' coachc' : ''), selected: sel, disabled: !humanTurn || busy, label: NM[type] + ' card', click: () => this.clickCard(idx), draggable: humanTurn && !busy, dragStart: (e) => this.dragStart(e, idx), dragEnd: () => this.dragEnd() });
     });
@@ -3179,7 +3302,7 @@ class Component extends DCLogic {
     else if (g.haste) hl = 'Haste: move this piece again (no captures, not onto the far row), or Finish turn to keep Haste for later.';
     else if (g.selCard >= 0) {
       const t = g.hands[g.turn][g.selCard];
-      hl = !Component.targetsFor(g.board, g.turn, t).length ? 'This card has no valid place right now. You can discard it to end your turn.' : t === 'pawn' ? 'Place the Pawn head on a dashed square in your first two rows.' : t === 'chk' ? 'Pick one of your pieces to give Checker.' : t === 'wb' ? 'Pick one of your Marchers to give Wall Breaker.' : t === 'zap' ? 'Pick any piece on the board to strike. It becomes a bare Pawn head.' : t === 'nuke' ? 'Pick one of your moving pieces to give Nuclear. One use.' : Component.ATTRS.indexOf(t) >= 0 ? 'Pick one of your pieces to give ' + NM[t] + '. A piece holds up to ' + Component.ATTR_MAX + ' attributes.' : 'Pick one of your pawns that has no body yet. It will turn into a ' + PN[PO[t]] + ' (' + NM[t] + ').';
+      hl = !Component.targetsFor(g.board, g.turn, t, g).length ? 'This card has no valid place right now. You can discard it to end your turn.' : t === 'pawn' ? 'Place the Pawn head on a dashed square in your first two rows.' : t === 'chk' ? 'Pick one of your pieces to give Checker.' : t === 'wb' ? 'Pick one of your Marchers to give Wall Breaker.' : t === 'zap' ? 'Pick any piece on the board to strike. It becomes a bare Pawn head.' : t === 'cavein' ? 'Pick an empty square to fill with rock. A path between both home rows always stays open.' : t === 'snare' ? 'Pick an enemy piece. It cannot move on its owner\'s next turn.' : t === 'recall' ? 'Pick a square in your first two rows. Your lost ' + PN[PO[Component.recallBody(g, g.turn)]] + ' returns there, body only.' : t === 'transpose' ? (g.tp >= 0 ? 'Now pick the piece to swap with.' : 'Pick the first of two of your pieces to swap. Marchers and Lancers never move forward.') : t === 'nuke' ? 'Pick one of your moving pieces to give Nuclear. One use.' : Component.ATTRS.indexOf(t) >= 0 ? 'Pick one of your pieces to give ' + NM[t] + '. A piece holds up to ' + Component.ATTR_MAX + ' attributes.' : 'Pick one of your pawns that has no body yet. It will turn into a ' + PN[PO[t]] + ' (' + NM[t] + ').';
     }
     else if (g.selected >= 0) hl = 'Pick a highlighted square. Capturing with a Checker piece lets you choose one more capture.';
     else hl = 'Move a piece, drag or click a card onto the board, or discard a card to end your turn.';
