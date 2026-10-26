@@ -724,6 +724,9 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
 .snring{position:absolute;inset:9%;border-radius:50%;border:2px dashed #e8774f;z-index:4;pointer-events:none;animation:snspin 7s linear infinite}
 @keyframes snspin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.snring{animation:none}}
+
+.botoffer{margin:10px 0;padding:12px 14px;border:1px solid #c8a96a;border-radius:6px;background:rgba(200,169,106,.08);display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.botoffer p{margin:0;font-size:14px;line-height:1.45}
 </style>
 <style>html,body{margin:0;min-height:100%;background:#0b0a0e}#app{min-height:100vh}</style>
 </head>
@@ -970,10 +973,16 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
       <p class="muted">{{rkRecord}}</p>
       <template data-sc-if value="{{rkIdle}}" hint-placeholder-val="{{ true }}">
         <button type="button" class="btn btn-p" disabled="{{rkNoFind}}" onClick="{{rkFind}}">Find a ranked match</button>
-        <p class="muted small">You'll play a random opponent near your rating. Win: rating up and 50 Coins. Loss: 15 Coins.</p>
+        <p class="muted small">You'll play a random opponent near your rating. Win: rating up and 50 Coins. Loss: 15 Coins. If nobody turns up in 30 seconds, you can play the House bot instead.</p>
       </template>
       <template data-sc-if value="{{rkSearching}}" hint-placeholder-val="{{ false }}">
         <div class="searching" role="status"><span class="spin" aria-hidden="true"></span><p>Searching for an opponent near {{rkRating}}…</p></div>
+        <template data-sc-if value="{{rkBotOffer}}" hint-placeholder-val="{{ false }}">
+          <div class="botoffer" role="status">
+            <p><b>No opponent yet.</b> Play the House bot instead: a win is +{{botRating}} rating and {{botCoins}} Coins, a loss is −{{botRating}} rating. Or keep searching.</p>
+            <button type="button" class="btn btn-p" disabled="{{rkNoFind}}" onClick="{{rkBot}}">Play the bot</button>
+          </div>
+        </template>
         <button type="button" class="btn btn-g" onClick="{{rkCancel}}">Cancel</button>
       </template>
     </section>
@@ -1568,7 +1577,7 @@ class Component extends DCLogic {
     if (sb && this._chan) sb.removeChannel(this._chan);
     if (sb && this._pres) sb.removeChannel(this._pres);
     this._chan = null; this._pres = null; this._uid = null; this._matchId = null;
-    clearInterval(this._qBeat); this._qBeat = null;
+    clearInterval(this._qBeat); this._qBeat = null; clearTimeout(this._botT); this._botT = null;
   }
   netOnChange(p) {
     const g = this.state.game, row = p && (p.new || p.old);
@@ -1619,7 +1628,7 @@ class Component extends DCLogic {
     v.oppName = res.match.opponent; v.meName = res.match.me; v.matchId = id;
     if (v.over && res.match.result) {
       const r = res.match.result, d = r.delta || 0;
-      v.over = Object.assign({}, v.over, { reward: r.coins, why: res.match.rated ? 'Rating ' + r.before + ' → ' + r.after + ' (' + (d >= 0 ? '+' : '') + d + ')' : '' });
+      v.over = Object.assign({}, v.over, { reward: r.coins, why: res.match.rated ? 'Rating ' + r.before + ' → ' + r.after + ' (' + (d >= 0 ? '+' : '') + d + ')' + (r.capped ? '. You reached today\'s ' + Component.BOT_OFFER.dailyWins + ' rewarded wins against the bot.' : '') : '' });
     }
     if (v.over && !(this._overSeen || {})[id]) { this._overSeen = Object.assign(this._overSeen || {}, { [id]: true }); setTimeout(() => { this.netRefresh().catch(() => {}); this.netLoadBoard(this.state.lb.scope); }, 300); }
     v.selected = -1; v.selCard = -1; v.note = '';
@@ -1631,7 +1640,9 @@ class Component extends DCLogic {
     await this.netRun(async () => {
       const r = await this.netCall('queue_join');
       if (r.match) { await this.netLoadMatch(r.match); return; }
-      this.netSet({ queue: true });
+      this.netSet({ queue: true, botOffer: false });
+      clearTimeout(this._botT);
+      this._botT = setTimeout(() => { if (this.state.net.queue) { this.netSet({ botOffer: true }); this.sfx('click'); } }, Component.BOT_OFFER.wait);
       clearInterval(this._qBeat);
       /* heartbeat: keeps our place in the queue alive and retries pairing with players who joined since */
       this._qBeat = setInterval(async () => {
@@ -1640,7 +1651,14 @@ class Component extends DCLogic {
       }, 15000);
     });
   }
-  netStopQueue() { clearInterval(this._qBeat); this._qBeat = null; this.netSet({ queue: false }); }
+  netStopQueue() { clearInterval(this._qBeat); this._qBeat = null; clearTimeout(this._botT); this._botT = null; this.netSet({ queue: false, botOffer: false }); }
+  async netPlayBot() {
+    await this.netRun(async () => {
+      const r = await this.netCall('bot_match');
+      this.netStopQueue();
+      await this.netLoadMatch(r.match);
+    });
+  }
   async netCancelQueue() { this.netStopQueue(); try { await this.netCall('queue_leave'); } catch (e) { /* the entry expires on its own */ } }
   async netLoadBoard(scope) {
     this.setState({ lb: { scope: scope, data: this.state.lb.scope === scope ? this.state.lb.data : null } });
@@ -1716,6 +1734,8 @@ class Component extends DCLogic {
      Observation Post 7 is rated Mature 17+, so promos show only to players who confirmed they are 17 or older.
      Art: the OP7 team's finished capsules, scaled uniformly (no crops, no tint shifts). linkLive stays false until the
      OP7 / Steam sessions confirm the store page is public; never switch it on from the date alone. */
+  /* ranked fallback; the server holds the real values (BOT in game.mjs) and checks the wait */
+  static BOT_OFFER = { wait: 30000, rating: 2, coins: 25, dailyWins: 10 };
   static OP7 = {
     title: 'Observation Post 7', tagline: 'The Directorate is watching. So are you.', rating: 'Mature 17+',
     cta: 'Wishlist on Steam (coming Nov 17)', url: 'https://store.steampowered.com/app/5464740/', linkLive: false,
@@ -3136,6 +3156,8 @@ class Component extends DCLogic {
     vals.rkRecord = acc && acc.ratedGames ? acc.ratedWins + ' wins, ' + acc.ratedLosses + ' losses in ' + acc.ratedGames + ' ranked ' + (acc.ratedGames === 1 ? 'match' : 'matches') : 'No ranked matches yet.';
     vals.rkIdle = !N.queue; vals.rkSearching = !!N.queue; vals.rkNoFind = nb || deckBad;
     vals.rkFind = () => this.netFindRanked(); vals.rkCancel = () => this.netCancelQueue();
+    vals.rkBotOffer = !!(N.queue && N.botOffer); vals.rkBot = () => this.netPlayBot();
+    vals.botRating = Component.BOT_OFFER.rating; vals.botCoins = Component.BOT_OFFER.coins;
     const lbd = s.lb.data;
     vals.lbTabs = [['world', 'World'], ['state', 'Your state'], ['friends', 'Friends']].map((t) => ({ label: t[1], on: s.lb.scope === t[0], cls: 'tab' + (s.lb.scope === t[0] ? ' on' : ''), click: () => this.netLoadBoard(t[0]) }));
     vals.lbRows = lbd && lbd.rows ? lbd.rows.map((r, k) => ({ rank: '#' + (k + 1), name: r.name + (r.me ? ' (you)' : ''), tier: Component.tierOf(r.rating), rating: r.rating, games: r.games, cls: r.me ? 'me' : '' })) : [];
