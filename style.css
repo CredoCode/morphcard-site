@@ -18,3 +18,5 @@ li{margin:4px 0}
 .hero h1{font-size:clamp(46px,10vw,96px);letter-spacing:.12em;text-transform:uppercase}
 .hero p{color:var(--muted);max-width:520px}
 .links{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;margin-top:18px;font-size:14px;letter-spacing:.14em;text-transform:uppercase}
+.play{display:inline-block;margin-top:14px;padding:14px 34px;border:1px solid var(--gold);color:#0b0a08;background:var(--gold);font-size:15px;letter-spacing:.22em;text-transform:uppercase;text-decoration:none;font-weight:600}
+.play:hover{background:#fff;border-color:#fff;color:#0b0a08}
