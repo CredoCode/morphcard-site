@@ -945,6 +945,12 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
   .app:has(.game) .game:not(.handmini) .hand .card.sub-assault .art .dg,.app:has(.game) .game:not(.handmini) .hand .card.sub-guard .art .dg,.app:has(.game) .game:not(.handmini) .hand .card.sub-retaliate .art .dg,.app:has(.game) .game:not(.handmini) .hand .card.sub-mobility .art .dg{width:78px}
   .app:has(.game) .game:not(.handmini) .hand .card.sub-assault .art,.app:has(.game) .game:not(.handmini) .hand .card.sub-guard .art,.app:has(.game) .game:not(.handmini) .hand .card.sub-retaliate .art,.app:has(.game) .game:not(.handmini) .hand .card.sub-mobility .art{padding-top:14px;padding-bottom:14px}
 }
+
+/* turn timer */
+.tpanel .clock{margin-left:8px;padding:1px 7px;border:1px solid #3a3426;border-radius:3px;font:700 13px/1.3 'Hanken Grotesk',sans-serif;font-variant-numeric:tabular-nums lining-nums;color:#e8cf93;background:#0d0c10}
+.tpanel .clock.low{color:#ff8a7e;border-color:#d6392b;animation:clockPulse 1s ease-in-out infinite}
+@keyframes clockPulse{50%{background:#3a1512}}
+@media (prefers-reduced-motion:reduce){.tpanel .clock.low{animation:none}}
 </style>
 <style>html,body{margin:0;min-height:100%;background:#0b0a0e}#app{min-height:100vh;min-height:100dvh}</style>
 </head>
@@ -1333,7 +1339,7 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
 
   <aside class="gside">
     <div class="panel tpanel">
-      <template data-sc-if value="{{notTut}}" hint-placeholder-val="{{ true }}"><div class="turn"><span class="dot {{turnDot}}"></span>{{turnText}}<span class="muted caps">Captures: {{capText}}</span></div></template>
+      <template data-sc-if value="{{notTut}}" hint-placeholder-val="{{ true }}"><div class="turn"><span class="dot {{turnDot}}"></span>{{turnText}}<template data-sc-if value="{{hasClock}}" hint-placeholder-val="{{ false }}"><span class="{{clockCls}}" role="timer" aria-label="Time left this turn">{{clockText}}</span></template><span class="muted caps">Captures: {{capText}}</span></div></template>
       <p class="hint-line" role="status">{{hintLine}}</p>
       <div class="row">
         <template data-sc-if value="{{chaining}}" hint-placeholder-val="{{ false }}"><button type="button" class="btn btn-p" onClick="{{finishCapture}}">Finish turn</button></template>
@@ -1493,6 +1499,7 @@ a.op7-cta:hover{background:#e2d8c4;color:#110d0a}
         <li><span>Movement and Attribute cards come in four rarities: Common, Rare, Epic and Legendary. Rarer cards are more unusual, but each has a trade-off, such as one use only or no captures.</span></li>
         <li><span>Win by marching a Marcher all the way to the far end, but not onto a far-row square an enemy could capture. Or wipe out every enemy piece.</span></li>
         <li><span>Start with 9 cards and refill to 9 after each play. Discards reshuffle when you run out.</span></li>
+        <li><span>Each turn has a 20-second timer (40 seconds for the first turn online). Run out and you forfeit the match. If you have already captured and are choosing a Checker or Haste follow-up, your turn simply ends. The tutorial has no timer.</span></li>
         <li><span>Every match is played in a new cave with at least two open routes across. Rock walls block movement, and Leapers can jump over them. A Marcher with Wall Breaker can march into rock and open it for good.</span></li>
       </ol>
       <div class="row"><button type="button" class="btn btn-p" onClick="{{closeHow}}">Got it</button><button type="button" class="btn btn-s" onClick="{{startTut}}">Start the tutorial</button></div>
@@ -1817,6 +1824,11 @@ class Component extends DCLogic {
   netOnChange(p) {
     const g = this.state.game, row = p && (p.new || p.old);
     if (this.state.net.queue && p && p.eventType === 'INSERT' && p.new && p.new.status === 'active') { this.netStopQueue(); this.netLoadMatch(p.new.id).catch(() => {}); return; }
+    /* a challenge you sent was accepted: jump into the match (turns are timed) */
+    if (p && p.eventType === 'UPDATE' && p.new && p.new.status === 'active' && p.new.id !== this._matchId && !(g && g.mode === 'online' && !g.over)) {
+      const nd0 = (this.state.net.data && this.state.net.data.matches) || [];
+      if (nd0.some(function (m) { return m.id === p.new.id && m.status === 'challenge' && m.mine; })) { this.sfx('card'); this.netLoadMatch(p.new.id).catch(() => {}); return; }
+    }
     if (g && g.mode === 'online' && row && row.id === this._matchId && p.eventType === 'DELETE') {
       this._matchId = null;
       this.setState({ game: null, screen: 'online' });
@@ -1864,6 +1876,7 @@ class Component extends DCLogic {
   }
   async netLoadMatch(id) { this.netShowMatch(await this.netCall('view', { match: id }), id); }
   netShowMatch(res, id) {
+    if (res.match && res.match.now) this._skew = res.match.now - Date.now();
     if (!res.view) { this.netSet({ err: 'That match has not started yet.' }); return; }
     const g = this.state.game, v = res.view;
     const fx = v.fx && (!g || !g.fx || g.fx.id !== v.fx.id) ? v.fx : null;
@@ -1947,7 +1960,7 @@ class Component extends DCLogic {
       const ng = sim.state.game, me = g.human;
       ng.mode = 'online'; ng.matchId = g.matchId; ng.oppName = g.oppName; ng.meName = g.meName; ng.human = me;
       ng.hands = Object.assign({}, ng.hands, { [me]: ng.hands[me].filter(function (t) { return t !== '?'; }), [Component.other(me)]: g.hands[Component.other(me)] });
-      ng.decks = g.decks; ng.selected = -1; ng.selCard = -1; ng.note = '';
+      ng.decks = g.decks; ng.selected = -1; ng.selCard = -1; ng.note = ''; ng.turnEnds = null;
       /* same numbering as the server, so its reply doesn't replay the capture effect */
       ng.fx = sim.state.fx ? Object.assign({}, sim.state.fx, { id: ((g.fx && g.fx.id) || 0) + 1 }) : null;
       if (ng.over) ng.over = null; /* the server announces the result */
@@ -2585,7 +2598,7 @@ class Component extends DCLogic {
       id: Date.now(), mode: mode, human: 'w', board: Component.newBoard(), turn: 'w',
       hands: { w: w.hand, b: b.hand }, decks: { w: w.deck, b: b.deck }, caps: { w: 0, b: 0 },
       placed: { w: false, b: false }, discards: { w: [], b: [] },
-      selected: -1, selCard: -1, chain: null, over: null, log: [], lastFrom: -1, lastTo: -1, note: '', fallen: { w: [], b: [] }, tp: -1
+      selected: -1, selCard: -1, chain: null, over: null, log: [], lastFrom: -1, lastTo: -1, note: '', fallen: { w: [], b: [] }, tp: -1, turnNo: 0, clockFor: 0, turnEnds: Date.now() + Component.TURN_MS
     };
   }
   startGame(mode) {
@@ -2596,6 +2609,16 @@ class Component extends DCLogic {
   static TUT_REWARD = 100;
   /* a win against the bot in Pass & Play; losses pay nothing and it never changes rating */
   static BOT_WIN_COINS = 5;
+  /* turn timer: 20 s per turn (40 s for the first online turn, so both players can load); online moves get 3 s of grace for lag */
+  static TURN_MS = 20000;
+  static FIRST_TURN_MS = 40000;
+  static TURN_GRACE_MS = 3000;
+  /* the side to move ran out of time: it forfeits (the caller turns a Checker / Haste follow-up into a plain "stop" instead) */
+  static timeOut(g) {
+    const ng = Object.assign({}, g, { over: { winner: Component.other(g.turn), reason: 'timeout' }, chain: null, haste: null, selected: -1, selCard: -1, tp: -1, turnEnds: null });
+    ng.log = g.log.concat([(g.turn === 'w' ? 'White' : 'Black') + ' ran out of time and forfeits']);
+    return ng;
+  }
   /* the large card view's full explanation of each card */
   static DETAIL = {
     pawn: 'The start of every piece. Place it on an empty square in your first two rows. A bare head can\'t move until you give it a movement card.',
@@ -2890,6 +2913,30 @@ class Component extends DCLogic {
     if (t === 'transpose') { this.setGame({ selCard: hi, tp: i, note: 'Now pick the piece to swap with.' }); return; }
     this.perform({ type: Component.actType(t), card: t, sq: i, hi: hi });
   }
+  /* Turn timer. Pass & Play runs it here; online, the server decides, so when time is up we ask it to check. */
+  checkClock() {
+    const g = this.state.game;
+    if (!g || g.over || g.tut || !g.turnEnds) return;
+    if (g.mode === 'online') {
+      const left = g.turnEnds - (Date.now() + (this._skew || 0));
+      const key = g.matchId + ':' + (g.turnNo || 0);
+      if (left > -Component.TURN_GRACE_MS - 600 || this._clockAsked === key || this._acting) return;
+      this._clockAsked = key;
+      this.netCall('clock', { match: g.matchId }).then((res) => this.netShowMatch(res, g.matchId)).catch(() => { this._clockAsked = null; });
+      return;
+    }
+    if (Date.now() < g.turnEnds) return;
+    if (g.chain || g.haste) { this.setGame({ note: 'Time is up: your turn ends.' }); this.perform({ type: 'stop' }); return; }
+    this.sfx('lose');
+    this.settle(Component.timeOut(g), null);
+  }
+  clockTick() {
+    this.checkClock();
+    const g = this.state.game;
+    if (!g || g.over || !g.turnEnds || this.state.screen !== 'game') return;
+    const sec = Math.ceil((g.turnEnds - (Date.now() + (g.mode === 'online' ? (this._skew || 0) : 0))) / 1000);
+    if (sec !== this._clockSec) { this._clockSec = sec; this.setState({ clockSec: sec }); }
+  }
   dzOver(e) { if (this._dragIdx != null && e.preventDefault) { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'; } }
   dzDrop(e) {
     const g = this.state.game, idx = this._dragIdx;
@@ -3094,6 +3141,11 @@ class Component extends DCLogic {
     return n;
   }
   settle(g, fx) {
+    /* turn timer (Pass & Play): a fresh deadline each time a timed turn starts; the bot's own turns aren't timed */
+    if (g.mode === 'local' || g.mode === 'bot') {
+      const timed = !g.over && (g.mode === 'local' || g.turn === g.human);
+      if ((g.turnNo || 0) !== g.clockFor || !timed) { g.clockFor = g.turnNo || 0; g.turnEnds = timed ? Date.now() + Component.TURN_MS : null; }
+    }
     let coins = this.state.coins, stats = this.state.stats, tutDone = !!this.state.tutDone;
     const acct = this.state.acct && this.state.net.phase === 'ready';
     let serverReward = null;
@@ -3339,7 +3391,7 @@ class Component extends DCLogic {
 
   renderVals() {
     this.persist();
-    if (!this._touchBooted && typeof document !== 'undefined' && document.addEventListener) this.installTouchDrag();
+    if (!this._touchBooted && typeof document !== 'undefined' && document.addEventListener) { this.installTouchDrag(); setInterval(() => this.clockTick(), 500); }
     if (!this._netBooted) {
       /* if this browser has a saved online session, connect quietly so the menu can show who is signed in */
       this._netBooted = true;
@@ -3691,7 +3743,12 @@ class Component extends DCLogic {
     vals.dzOver = (e) => this.dzOver(e); vals.dzDrop = (e) => this.dzDrop(e); vals.discardSel = () => this.discardSel();
     vals.capText = online ? 'You ' + g.caps[viewer] + '  |  ' + oppNm + ' ' + g.caps[opp] : (g.mode === 'bot' ? 'You ' : 'White ') + g.caps[g.mode === 'bot' ? g.human : 'w'] + '  |  ' + (g.mode === 'bot' ? 'Bot ' : 'Black ') + g.caps[g.mode === 'bot' ? opp : 'b'];
 
-    vals.turnDot = g.turn; vals.chaining = busy && humanTurn; vals.gameCls = (g.tut ? 'tut' : '') + (busy && humanTurn ? ' chaining' : '') + (s.handMini ? ' handmini' : '');
+    vals.turnDot = g.turn; vals.chaining = busy && humanTurn;
+    {
+      const timed = !g.over && !g.tut && !!g.turnEnds && (g.mode !== 'bot' || g.turn === g.human);
+      const left = timed ? Math.max(0, Math.ceil((g.turnEnds - (Date.now() + (g.mode === 'online' ? (this._skew || 0) : 0))) / 1000)) : 0;
+      vals.hasClock = timed; vals.clockText = '0:' + String(left).padStart(2, '0'); vals.clockCls = 'clock' + (left <= 5 ? ' low' : '');
+    } vals.gameCls = (g.tut ? 'tut' : '') + (busy && humanTurn ? ' chaining' : '') + (s.handMini ? ' handmini' : '');
     vals.handMini = !!s.handMini; vals.handMinIcon = s.handMini ? '\u25a1' : '_'; vals.handMinLabel = s.handMini ? 'Show whole cards' : 'Show card names only';
     vals.toggleHandMini = () => { this.sfx('click'); this.setState({ handMini: !this.state.handMini }); };
     vals.showBan = !g.over && !busy && (!g.tut || ((g.turnNo || 0) > 0 && !g.tut.done));
@@ -3735,7 +3792,7 @@ class Component extends DCLogic {
       const youWin = g.mode === 'bot' || online ? o.winner === g.human : false;
       vals.againLabel = g.tut ? 'Play vs Bot' : online ? 'Back to Online' : 'Play again';
       vals.overTitle = g.tut ? 'Tutorial complete' : !o.winner ? 'Draw' : online ? (youWin ? 'You win' : oppNm + ' wins') : g.mode === 'bot' ? (youWin ? 'You win' : 'Bot wins') : nm(o.winner) + ' wins';
-      vals.overSub = g.tut ? 'You know the basics: heads and bodies, moving, capturing, attributes, discarding and winning. Next, take on the bot.' : o.reason === 'breakthrough' ? 'A Marcher reached the far end of the board.' : o.reason === 'elimination' ? 'All of the opponent\'s pieces were eliminated.' : o.reason === 'stuck' ? 'Neither side can act. Most captures wins.' : 'By resignation.';
+      vals.overSub = g.tut ? 'You know the basics: heads and bodies, moving, capturing, attributes, discarding and winning. Next, take on the bot.' : o.reason === 'breakthrough' ? 'A Marcher reached the far end of the board.' : o.reason === 'elimination' ? 'All of the opponent\'s pieces were eliminated.' : o.reason === 'stuck' ? 'Neither side can act. Most captures wins.' : o.reason === 'timeout' ? ((online || g.mode === 'bot') ? (youWin ? (online ? oppNm : 'The bot') + ' ran out of time.' : 'You ran out of time.') : nm(Component.other(o.winner)) + ' ran out of time.') + ' A turn has ' + (Component.TURN_MS / 1000) + ' seconds.' : 'By resignation.';
       vals.hasReward = (o.reward || 0) > 0; vals.rewardAmt = o.reward || 0; vals.rewardWhy = o.why || '';
       vals.overCls = g.tut ? 'win' : !o.winner ? 'draw' : ((g.mode === 'bot' || online) && !youWin) ? 'lose' : 'win';
     }
